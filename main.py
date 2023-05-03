@@ -13,6 +13,9 @@ SONAR_LOGIN = "debe78c7993526771fbb2e040b98c93333094b48"
 SONAR_ORGANIZATION = "dglalperen"
 METRICS = 'bugs,code_smells,vulnerabilities,coverage'
 REPO_URL = "https://github.com/dglalperen/skeleton-loader.git"
+GITHUB_API_URL = "https://api.github.com"
+GITHUB_TOKEN = "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"
+
 
 def check_tools_exist():
     tools = ['git', 'sonar-scanner']
@@ -69,28 +72,79 @@ def fetch_project_metrics(project_key):
         print(f"Failed to fetch project metrics. Status code: {response.status_code}")
         sys.exit(1)
 
-if __name__ == '__main__':
 
+
+def search_github_repositories(language, num_repos):
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json"
+    }
+    params = {
+        "q": f"language:{language}",
+        "per_page": num_repos,
+        "sort": "stars",  # Optional: sort the results by the number of stars
+        "order": "desc"   # Optional: order the results in descending order
+    }
+
+    response = requests.get(f"{GITHUB_API_URL}/search/repositories", headers=headers, params=params)
+
+    if response.status_code == 200:
+        items = response.json()['items']
+        return [item['html_url'] for item in items]
+    else:
+        print(f"Failed to search for repositories. Status code: {response.status_code}")
+        sys.exit(1)
+
+
+
+
+def analyze_repository(repo_url):
     # Check if the provided URL is a valid GitHub repository
-    if not urlparse(REPO_URL).netloc == 'github.com':
+    if not urlparse(repo_url).netloc == 'github.com':
         print("Invalid GitHub repository URL.")
         sys.exit(1)
 
-    check_tools_exist()
-
-    repo_name = urlparse(REPO_URL).path.split('/')[-1]
+    repo_name = urlparse(repo_url).path.split('/')[-1]
     repo_dir = os.path.join(os.getcwd(), repo_name)
     project_key = f"{SONAR_ORGANIZATION}:{repo_name}"
 
     cleanup(repo_dir)
-    clone_repo(REPO_URL, repo_dir)
+    clone_repo(repo_url, repo_dir)
     analyze_code(repo_dir)
     cleanup(repo_dir)
 
-    print("SonarCloud analysis completed.")
+    print(f"\nSonarCloud analysis completed for {repo_url}.")
 
     # Fetch and print the project metrics
     metrics = fetch_project_metrics(project_key)
     print("\nAnalysis Results:")
     for metric, value in metrics.items():
         print(f"{metric}: {value}")
+    print("\n")
+
+def main():
+    check_tools_exist()
+
+    choice = input("Choose an option:\n"
+                   "1. Analyze a specific GitHub URL\n"
+                   "2. Search for multiple repositories with specific characteristics\n"
+                   "Enter 1 or 2: ")
+
+    if choice == "1":
+        repo_url = input("Enter the GitHub repository URL: ")
+        analyze_repository(repo_url)
+    elif choice == "2":
+        language = input("Enter the programming language: ")
+        min_size = input("Enter the minimum code size (in KB): ")
+        max_size = input("Enter the maximum code size (in KB): ")
+        num_repos = input("Enter the number of repositories to search for: ")
+
+        repo_urls = search_github_repositories(language,num_repos)
+        for repo_url in repo_urls:
+            analyze_repository(repo_url)
+    else:
+        print("Invalid option. Please enter either 1 or 2.")
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()

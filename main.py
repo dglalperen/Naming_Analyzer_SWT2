@@ -12,9 +12,7 @@ SONAR_API_URL = f"{SONAR_HOST_URL}/api"
 SONAR_LOGIN = "debe78c7993526771fbb2e040b98c93333094b48"
 SONAR_ORGANIZATION = "dglalperen"
 METRICS = 'bugs,code_smells,vulnerabilities,coverage'
-REPO_URL = "https://github.com/dglalperen/skeleton-loader.git"
-GITHUB_API_URL = "https://api.github.com"
-GITHUB_TOKEN = "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"
+
 
 
 def check_tools_exist():
@@ -148,3 +146,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

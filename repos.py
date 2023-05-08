@@ -1,9 +1,12 @@
-import sys
+import json
 import os
-import requests
-import pandas as pd
+import sys
 import time
+
+import pandas as pd
+import requests
 from github import Github
+
 
 def check_github_api_credentials(api_url, token):
     headers = {"Authorization": f"token {token}"}
@@ -91,6 +94,49 @@ def fork_and_analyze_repositories(df, github_token):
 
     sonar_token = os.environ["SONAR_TOKEN"]
 
+    def fetch_analysis_results(project_key, sonar_token, language):
+        sonar_api_url = "https://sonarcloud.io/api/issues/search"
+
+        language_rules = {
+            "java": "squid:S00100,squid:S00116,squid:S00117",
+            "javascript": "javascript:S100,javascript:S101",
+            "python": "python:S1542,python:S100",
+            "csharp": "csharpsquid:S100,csharpsquid:S101",
+            "php": "php:S116,php:S117",
+            "ruby": "ruby:S100,ruby:S101",
+        }
+
+        rules = language_rules.get(language.lower(), "")
+
+        params = {
+            "componentKeys": project_key,
+            "rules": rules,
+            "ps": 500,  # Page size
+            "p": 1,  # Page number
+        }
+        headers = {"Authorization": f"Token {sonar_token}"}
+
+        response = requests.get(sonar_api_url, headers=headers, params=params)
+
+        if response.status_code == 200:
+            issues = response.json()["issues"]
+            results = []
+
+            for issue in issues:
+                result = {
+                    "project_key": project_key,
+                    "rule": issue["rule"],
+                    "message": issue["message"],
+                    "component": issue["component"],
+                    "severity": issue["severity"],
+                }
+                results.append(result)
+
+            return results
+        else:
+            print(f"Error fetching analysis results for {project_key}: {response.status_code}")
+            return []
+
     # Analyze the forked repositories with SonarCloud
     for forked_repo in forked_repos:
         # Configure the repository in SonarCloud
@@ -114,8 +160,20 @@ def fork_and_analyze_repositories(df, github_token):
 
         print(f"SonarCloud analysis completed for {forked_repo.html_url}")
 
-        # Sleep for a while to avoid rate limiting issues
-        time.sleep(60)
+        # Analyze the forked repositories with SonarCloud
+        all_results = []
+        for forked_repo in forked_repos:
+            # ... (previous code) ...
+
+            # Fetch SonarCloud analysis results
+            project_key = f"{user.login}_{repo_name}"
+            results = fetch_analysis_results(project_key, sonar_token)
+            all_results.extend(results)
+
+            # Sleep for a while to avoid rate limiting issues
+            time.sleep(60)
+
+        return all_results
 
 if not check_git:
     sys.exit()
@@ -128,7 +186,8 @@ num_repos = input("Enter the number of repositories to search for: ")
 df = search_repositories(language, min_size, max_size, num_repos, GITHUB_TOKEN)
 
 
-# NEW
-fork_and_analyze_repositories(df, GITHUB_TOKEN)
+results = fork_and_analyze_repositories(df, GITHUB_TOKEN, SONAR_TOKEN)
+print(json.dumps(results, indent=2))
+
 
 print(df)

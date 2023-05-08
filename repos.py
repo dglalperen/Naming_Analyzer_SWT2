@@ -92,7 +92,7 @@ def fork_and_analyze_repositories(df, github_token):
     # For instructions, follow the SonarCloud documentation: https://sonarcloud.io/documentation/analysis/github/
     # Make sure the SONAR_TOKEN environment variable is set with your SonarCloud token
 
-    sonar_token = os.environ["SONAR_TOKEN"]
+    SONAR_TOKEN = "debe78c7993526771fbb2e040b98c93333094b48"
 
     def fetch_analysis_results(project_key, sonar_token, language):
         sonar_api_url = "https://sonarcloud.io/api/issues/search"
@@ -153,7 +153,7 @@ def fork_and_analyze_repositories(df, github_token):
         os.system(f"git clone {clone_url}")
 
         # Run SonarCloud analysis
-        os.system(f"sonar-scanner -Dsonar.projectKey={user.login}_{repo_name} -Dsonar.sources=. -Dsonar.host.url=https://sonarcloud.io -Dsonar.login={sonar_token}")
+        os.system(f"sonar-scanner -Dsonar.projectKey={user.login}_{repo_name} -Dsonar.sources=. -Dsonar.host.url=https://sonarcloud.io -Dsonar.login={SONAR_TOKEN}")
 
         # Clean up cloned repository
         os.system(f"rm -rf {repo_name}")
@@ -167,7 +167,7 @@ def fork_and_analyze_repositories(df, github_token):
 
             # Fetch SonarCloud analysis results
             project_key = f"{user.login}_{repo_name}"
-            results = fetch_analysis_results(project_key, sonar_token)
+            results = fetch_analysis_results(project_key, SONAR_TOKEN)
             all_results.extend(results)
 
             # Sleep for a while to avoid rate limiting issues
@@ -186,7 +186,7 @@ num_repos = input("Enter the number of repositories to search for: ")
 df = search_repositories(language, min_size, max_size, num_repos, GITHUB_TOKEN)
 
 
-results = fork_and_analyze_repositories(df, GITHUB_TOKEN, SONAR_TOKEN)
+results = fork_and_analyze_repositories(df, GITHUB_TOKEN)
 print(json.dumps(results, indent=2))
 
 

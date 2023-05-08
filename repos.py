@@ -1,7 +1,9 @@
 import sys
-
+import os
 import requests
 import pandas as pd
+import time
+from github import Github
 
 def check_github_api_credentials(api_url, token):
     headers = {"Authorization": f"token {token}"}
@@ -62,6 +64,59 @@ GITHUB_TOKEN = "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"
 
 check_git = check_github_api_credentials(GITHUB_API_URL, GITHUB_TOKEN)
 
+def fork_and_analyze_repositories(df, github_token):
+    # Authenticate with the GitHub API
+    g = Github(github_token)
+
+    # Get the authenticated user
+    user = g.get_user()
+
+    # Iterate through the DataFrame and fork repositories to your account
+    forked_repos = []
+    for index, row in df.iterrows():
+        repo_url = row["Repository URL"]
+        repo_name = repo_url.split("/")[-1]
+        original_repo = g.get_repo(repo_url.replace("https://github.com/", ""))
+
+        try:
+            forked_repo = user.create_fork(original_repo)
+            forked_repos.append(forked_repo)
+            print(f"Forked {repo_url} to {forked_repo.html_url}")
+        except Exception as e:
+            print(f"Error forking {repo_url}: {e}")
+
+    # Ensure SonarCloud is set up and connected to your GitHub account
+    # For instructions, follow the SonarCloud documentation: https://sonarcloud.io/documentation/analysis/github/
+    # Make sure the SONAR_TOKEN environment variable is set with your SonarCloud token
+
+    sonar_token = os.environ["SONAR_TOKEN"]
+
+    # Analyze the forked repositories with SonarCloud
+    for forked_repo in forked_repos:
+        # Configure the repository in SonarCloud
+        # For instructions, follow the SonarCloud documentation: https://sonarcloud.io/documentation/analysis/setup-analysis/
+
+        # Run the SonarCloud analysis using the sonar-scanner command line tool
+        # For instructions, follow the SonarCloud documentation: https://sonarcloud.io/documentation/analysis/scan/sonarscanner/
+        # Make sure the sonar-scanner tool is installed and available in your PATH
+
+        clone_url = forked_repo.clone_url
+        repo_name = forked_repo.name
+
+        # Clone the repository
+        os.system(f"git clone {clone_url}")
+
+        # Run SonarCloud analysis
+        os.system(f"sonar-scanner -Dsonar.projectKey={user.login}_{repo_name} -Dsonar.sources=. -Dsonar.host.url=https://sonarcloud.io -Dsonar.login={sonar_token}")
+
+        # Clean up cloned repository
+        os.system(f"rm -rf {repo_name}")
+
+        print(f"SonarCloud analysis completed for {forked_repo.html_url}")
+
+        # Sleep for a while to avoid rate limiting issues
+        time.sleep(60)
+
 if not check_git:
     sys.exit()
 
@@ -71,4 +126,9 @@ max_size = input("Enter the maximum code size (in KB): ")
 num_repos = input("Enter the number of repositories to search for: ")
 
 df = search_repositories(language, min_size, max_size, num_repos, GITHUB_TOKEN)
+
+
+# NEW
+fork_and_analyze_repositories(df, GITHUB_TOKEN)
+
 print(df)

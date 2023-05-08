@@ -1,8 +1,16 @@
-import json
-import os
+
 import time
-import requests
 from github import Github
+import os
+import subprocess
+import pandas as pd
+import json
+import requests
+import tempfile
+import shutil
+
+
+
 
 def fetch_analysis_results(project_key, language):
     sonar_api_url = "https://sonarcloud.io/api/issues/search"
@@ -79,6 +87,72 @@ def fork_and_analyze_repositories(df, language):
         time.sleep(60)
 
     return all_results
+
+
+
+
+
+
+def analyze_naming_conventions(df, language):
+    language_rules = {
+        "java": "squid:S00100,squid:S00116,squid:S00117",
+        "javascript": "javascript:S100,javascript:S101",
+        "python": "python:S1542,python:S100",
+        "csharp": "csharpsquid:S100,csharpsquid:S101",
+        "php": "php:S116,php:S117",
+        "ruby": "ruby:S100,ruby:S101",
+    }
+
+    sonarcloud_url = "https://sonarcloud.io"  # SonarCloud URL
+
+    naming_conventions = []
+
+    for index, row in df.iterrows():
+        repo_url = row["Repository URL"]
+
+        # Klone das Repository in einen temporären Ordner
+        temp_dir = tempfile.mkdtemp()
+        subprocess.run(["git", "clone", repo_url, temp_dir], check=True)
+
+        project_key = f"repo_{index}"
+        project_name = f"Repo {index}"
+        project_version = "1.0"
+
+        # Führe den SonarCloud-Scanner aus
+        subprocess.run([
+            'sonar-scanner',
+            f'-Dsonar.host.url={sonarcloud_url}',
+            f'-Dsonar.login={SONAR_TOKEN}',
+            f'-Dsonar.organization={SONAR_ORGANIZATION}',
+            f'-Dsonar.projectKey={SONAR_ORGANIZATION}:{os.path.basename(temp_dir)}',
+            f'-Dsonar.projectBaseDir={temp_dir}',
+            f'-Dsonar.language={language}',
+            f'-Dsonar.rule={language_rules[language]}',
+            f'-Dsonar.python.xunit.reportPath=sonar-python-report.xml'
+        ], cwd=temp_dir, check=True)
+
+        # Rufe die Metriken von SonarCloud ab
+        metrics = "ncloc,functions,classes,comment_lines_density,complexity,violations"
+        metrics_url = f"{sonarcloud_url}/api/measures/component?component={project_key}&metricKeys={metrics}"
+        response = requests.get(metrics_url, auth=(SONAR_TOKEN, ""))
+
+        if response.status_code == 200:
+            measures = response.json()["component"]["measures"]
+
+            # Extrahiere die Metrik für die Namensgebung aus den SonarCloud-Metriken
+            naming_convention = 0  # Hier können Sie die entsprechende Metrik aus den Maßnahmen extrahieren
+            naming_conventions.append(naming_convention)
+        else:
+            naming_conventions.append(None)
+
+        # Lösche den temporären Ordner
+        shutil.rmtree(temp_dir)
+
+    # Füge die Namensgebungsmetrik zum DataFrame hinzu
+    df["naming_convention"] = naming_conventions
+    df.to_csv("repositories.csv", index=False)
+
+
 
 
 SONAR_ORGANIZATION = "dglalperen"

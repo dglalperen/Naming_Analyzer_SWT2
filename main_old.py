@@ -5,7 +5,7 @@ import shutil
 from urllib.parse import urlparse
 import requests
 import base64
-import time
+from helpers import check_tools_exist
 
 SONAR_HOST_URL = "https://sonarcloud.io"
 SONAR_API_URL = f"{SONAR_HOST_URL}/api"
@@ -14,15 +14,6 @@ SONAR_ORGANIZATION = "dglalperen"
 METRICS = 'bugs,code_smells,vulnerabilities,coverage'
 
 
-
-def check_tools_exist():
-    tools = ['git', 'sonar-scanner']
-    for tool in tools:
-        try:
-            subprocess.run([tool, '--version'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except FileNotFoundError:
-            print(f"{tool} not found. Please ensure it is installed and in your PATH.")
-            sys.exit(1)
 
 def clone_repo(url, repo_dir):
     try:
@@ -72,31 +63,21 @@ def fetch_project_metrics(project_key):
 
 
 
-def search_github_repositories(language, num_repos):
-    headers = {
-        "Authorization": f"token {GITHUB_TOKEN}",
-        "Accept": "application/vnd.github+json"
-    }
-    params = {
-        "q": f"language:{language}",
-        "per_page": num_repos,
-        "sort": "stars",  # Optional: sort the results by the number of stars
-        "order": "desc"   # Optional: order the results in descending order
-    }
 
-    response = requests.get(f"{GITHUB_API_URL}/search/repositories", headers=headers, params=params)
-
-    if response.status_code == 200:
-        items = response.json()['items']
-        return [item['html_url'] for item in items]
-    else:
-        print(f"Failed to search for repositories. Status code: {response.status_code}")
-        sys.exit(1)
 
 
 
 
 def analyze_repository(repo_url):
+
+    language_rules = {
+        "java": "squid:S00100,squid:S00116,squid:S00117",
+        "javascript": "javascript:S100,javascript:S101",
+        "python": "python:S1542,python:S100",
+        "csharp": "csharpsquid:S100,csharpsquid:S101",
+        "php": "php:S116,php:S117",
+        "ruby": "ruby:S100,ruby:S101",
+    }
     # Check if the provided URL is a valid GitHub repository
     if not urlparse(repo_url).netloc == 'github.com':
         print("Invalid GitHub repository URL.")

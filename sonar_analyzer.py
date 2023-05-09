@@ -61,7 +61,6 @@ def analyze_naming_conventions(input_data, language):
             f'-Dsonar.projectKey={SONAR_ORGANIZATION}:{os.path.basename(repo_name)}',
             f'-Dsonar.projectBaseDir={temp_dir}',
             f'-Dsonar.language={language}',
-            f'-Dsonar.rule={LANGUAGE_RULES[language]}',
             f'-Dsonar.python.xunit.reportPath=sonar-python-report.xml'
         ], cwd=temp_dir, check=True)
 

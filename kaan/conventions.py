@@ -24,14 +24,10 @@ def split_compound_word(word):
     return split_words
 
 pep8_naming_conventions = {
-    "module_name": "^[a-z_][a-z0-9_]*$",
-    "class_name": "^(?:[A-Z][a-z0-9]*)+$",
-    "function_name": "^[a-z_][a-z0-9_]*$",
-    "variable_name": "^[a-z_][a-z0-9_]*$",
-    "constant_name": "^[A-Z_][A-Z0-9_]*$",
-    "method_name": "^[a-z_][a-z0-9_]*$",
-    "first_argument_instance_method": "^self$",
-    "first_argument_class_method": "^cls$"
+    "function": r"^[a-z_][a-z0-9_]{2,30}$",
+    "class": r"^[A-Z][a-zA-Z0-9]{2,30}$",
+    "variable": r"^[a-z_][a-z0-9_]{2,30}$",
+    "constant": r"^[A-Z_][A-Z0-9_]{2,30}$",
 }
 
 

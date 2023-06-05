@@ -30,7 +30,9 @@ if __name__ == '__main__':
 
     token = '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'
     repo_url = 'https://github.com/donnemartin/system-design-primer'
+    repo_url_bad_repo = "https://github.com/dglalperen/PythonBad.git"
 
-    results = analyze_repository(repo_url, token)
+    results = analyze_repository(repo_url_bad_repo, token)
+    print(results)
     summary = summarize_results(results)
     print(summary)

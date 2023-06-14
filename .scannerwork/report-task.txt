@@ -1,0 +1,7 @@
+organization=dglalperen
+projectKey=kaan_test
+serverUrl=https://sonarcloud.io
+serverVersion=8.0.0.40746
+dashboardUrl=https://sonarcloud.io/dashboard?id=kaan_test
+ceTaskId=AYgE2kefEoXHSow6lKL7
+ceTaskUrl=https://sonarcloud.io/api/ce/task?id=AYgE2kefEoXHSow6lKL7

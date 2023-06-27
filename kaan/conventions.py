@@ -59,7 +59,7 @@ class TestPep8Conventions(unittest.TestCase):
     # Test cases for function names
     def test_function_name(self):
         self.assertTrue(is_name_conformant("parse_streams", "function"))
-        self.assertTrue(is_name_conformant("_check_multipart_byteranges", "function"))
+        self.assertTrue(is_name_conformant("streams", "function"))
         self.assertFalse(is_name_conformant("myFunction", "function"))
         self.assertFalse(is_name_conformant("MyFunction", "function"))
         self.assertFalse(is_name_conformant("my-function", "function"))

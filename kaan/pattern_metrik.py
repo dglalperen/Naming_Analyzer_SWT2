@@ -5,10 +5,23 @@ from conventions import is_name_conformant
 def calc_metrik(names_dict):
     total_names = 0
     total_conformant_names = 0
+    non_conformant_names = {
+        "function": [],
+        "class": [],
+        "variable": [],
+        "constant": []
+    }
+
     for name_type, names in names_dict.items():
         total_names += len(names)
-        total_conformant_names += sum(is_name_conformant(name, name_type) for name in names)
-    return total_conformant_names / total_names if total_names > 0 else 0
+        for name in names:
+            if is_name_conformant(name, name_type):
+                total_conformant_names += 1
+            else:
+                non_conformant_names[name_type].append(name)
+
+    metric = total_conformant_names / total_names if total_names > 0 else 0
+    return metric, non_conformant_names
 
 def summarize_results(results):
     all_names = {
@@ -29,10 +42,13 @@ def summarize_results(results):
 if __name__ == '__main__':
 
     token = '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'
-    repo_url = 'https://github.com/donnemartin/system-design-primer'
+    repo_url = 'https://github.com/vfaronov/httpolice'
     repo_url_bad_repo = "https://github.com/dglalperen/PythonBad.git"
 
-    results = analyze_repository(repo_url_bad_repo, token)
-    print(results)
+    results = analyze_repository(repo_url, token)
+
     summary = summarize_results(results)
-    print(summary)
+
+    metric, non_conformant_names = calc_metrik(summary)
+    print(metric)
+    print(non_conformant_names)

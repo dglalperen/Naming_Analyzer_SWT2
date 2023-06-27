@@ -14,6 +14,9 @@ def split_compound_word(word):
     word = word.lower()
     split_words = []
     while len(word) > 0:
+        if len(word) < 6:  # Add this condition to skip short words
+            split_words.append(word)
+            break
         max_len_word = ''
         for i in range(len(word)):
             if word[:i+1] in english_words and len(word[:i+1]) > len(max_len_word):
@@ -55,6 +58,7 @@ class TestPep8Conventions(unittest.TestCase):
     # Test cases for class names
     def test_class_name(self):
         self.assertTrue(is_name_conformant("MyClass", "class"))
+        self.assertTrue(is_name_conformant("Names", "class"))
         self.assertFalse(is_name_conformant("my_class", "class"))
         self.assertFalse(is_name_conformant("myclass", "class"))
         self.assertFalse(is_name_conformant("My_Class", "class"))
@@ -63,6 +67,7 @@ class TestPep8Conventions(unittest.TestCase):
     # Test cases for function names
     def test_function_name(self):
         self.assertTrue(is_name_conformant("my_function", "function"))
+        self.assertTrue(is_name_conformant("naming", "function"))
         self.assertFalse(is_name_conformant("myFunction", "function"))
         self.assertFalse(is_name_conformant("MyFunction", "function"))
         self.assertFalse(is_name_conformant("my-function", "function"))
@@ -72,6 +77,8 @@ class TestPep8Conventions(unittest.TestCase):
     # Test cases for variable names
     def test_variable_name(self):
         self.assertTrue(is_name_conformant("my_variable", "variable"))
+        self.assertTrue(is_name_conformant("HTTP_message", "variable"))
+        self.assertTrue(is_name_conformant("req", "variable"))
         self.assertFalse(is_name_conformant("myVariable", "variable"))
         self.assertFalse(is_name_conformant("MyVariable", "variable"))
         self.assertFalse(is_name_conformant("my-variable", "variable"))
@@ -80,6 +87,7 @@ class TestPep8Conventions(unittest.TestCase):
     # Test cases for constant names
     def test_constant_name(self):
         self.assertTrue(is_name_conformant("MY_CONSTANT", "constant"))
+
         self.assertFalse(is_name_conformant("my_constant", "constant"))
         self.assertFalse(is_name_conformant("MyConstant", "constant"))
         self.assertFalse(is_name_conformant("MY-CONSTANT", "constant"))
@@ -89,3 +97,4 @@ class TestPep8Conventions(unittest.TestCase):
 # Run the unit tests
 if __name__ == "__main__":
     unittest.main()
+

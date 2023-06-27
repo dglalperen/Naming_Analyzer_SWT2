@@ -8,11 +8,16 @@ import shutil
 def analyze_code(file_path):
     with open(file_path, "r") as source:
         tree = ast.parse(source.read())
-    function_names = [node.name.lower() for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
+    function_names = [node.name.lower() for node in ast.walk(tree)
+                      if isinstance(node, ast.FunctionDef) and not (node.name.startswith('__') and node.name.endswith('__'))]
     class_names = [node.name for node in ast.walk(tree) if isinstance(node, ast.ClassDef)]
+    constant_names = [node.targets[0].id for node in ast.walk(tree) if
+                      isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
+                      and node.targets[0].id.isupper()]
     variable_names = [node.targets[0].id for node in ast.walk(tree) if
-                      isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)]
-    constant_names = [node for node in variable_names if node.isupper()]
+                      isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
+                      and not (node.targets[0].id.startswith('__') and node.targets[0].id.endswith('__'))]
+    variable_names = [node for node in variable_names if node not in constant_names]
 
     return {
         "function": function_names,
@@ -64,4 +69,4 @@ def analyze_repository(repo_url, token):
 if __name__ == "__main__":
     token = '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'
     repo_url = 'https://github.com/donnemartin/system-design-primer'
-    analyze_repository(repo_url, token)
+    print(analyze_repository(repo_url, token))

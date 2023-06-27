@@ -2,38 +2,31 @@ import re
 import nltk
 import unittest
 from nltk.corpus import words
+from wordsegment import load, segment
+from nltk.stem import WordNetLemmatizer
+
 
 # Download the 'words' corpus from nltk
 nltk.download('words')
 
 # Create a set of English words for later use
 english_words = set(words.words())
-
+load()
 # Function to split a compound word into its constituents
 def split_compound_word(word):
     word = word.lower()
-    split_words = []
-    while len(word) > 0:
-        if len(word) < 6:  # Add this condition to skip short words
-            split_words.append(word)
-            break
-        max_len_word = ''
-        for i in range(len(word)):
-            if word[:i+1] in english_words and len(word[:i+1]) > len(max_len_word):
-                max_len_word = word[:i+1]
-        if max_len_word != '':
-            split_words.append(max_len_word)
-            word = word[len(max_len_word):]
-        else:
-            break
+    word = word.lower()
+    lemmatizer = WordNetLemmatizer()
+    word = lemmatizer.lemmatize(word)
+    split_words = segment(word)
     return split_words
 
 # Define the PEP 8 naming conventions for different types of identifiers
 pep8_naming_conventions = {
-    "function": r"^[a-z_][a-z0-9_]{2,30}$",
-    "class": r"^[A-Z][a-zA-Z0-9]{2,30}$",
-    "variable": r"^[a-z_][a-z0-9_]{2,30}$",
-    "constant": r"^[A-Z_][A-Z0-9_]{2,30}$",
+    "function": r"^[a-z_][a-z0-9_]{0,30}$",
+    "class": r"^[A-Z][a-zA-Z0-9]{0,30}$",
+    "variable": r"^[a-z_][a-z0-9_]{0,30}$",
+    "constant": r"^[A-Z_][A-Z0-9_]{0,30}$",
 }
 
 # Function to check if a given name is conformant with a given type of PEP 8 naming convention
@@ -47,10 +40,9 @@ def is_name_conformant(name, name_type):
     if name_type in ["function", "variable", "constant"]:
         parts = name.split('_')
         for part in parts:
-            if len(split_compound_word(part)) > 1:
+            if len(split_compound_word(part)) > 1 and len(part) >= 7:
                 return False
     return True
-
 
 
 # Define a set of unit tests to check the correctness of the is_name_conformant function
@@ -66,8 +58,8 @@ class TestPep8Conventions(unittest.TestCase):
 
     # Test cases for function names
     def test_function_name(self):
-        self.assertTrue(is_name_conformant("my_function", "function"))
-        self.assertTrue(is_name_conformant("naming", "function"))
+        self.assertTrue(is_name_conformant("parse_streams", "function"))
+        self.assertTrue(is_name_conformant("_check_multipart_byteranges", "function"))
         self.assertFalse(is_name_conformant("myFunction", "function"))
         self.assertFalse(is_name_conformant("MyFunction", "function"))
         self.assertFalse(is_name_conformant("my-function", "function"))
@@ -77,7 +69,7 @@ class TestPep8Conventions(unittest.TestCase):
     # Test cases for variable names
     def test_variable_name(self):
         self.assertTrue(is_name_conformant("my_variable", "variable"))
-        self.assertTrue(is_name_conformant("HTTP_message", "variable"))
+        self.assertFalse(is_name_conformant("HTTP_message", "variable"))
         self.assertTrue(is_name_conformant("req", "variable"))
         self.assertFalse(is_name_conformant("myVariable", "variable"))
         self.assertFalse(is_name_conformant("MyVariable", "variable"))
@@ -96,5 +88,7 @@ class TestPep8Conventions(unittest.TestCase):
 
 # Run the unit tests
 if __name__ == "__main__":
-    unittest.main()
+    #unittest.main()
+    import splitter
 
+    splitter.split('artfactory')

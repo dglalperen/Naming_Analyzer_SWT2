@@ -33,8 +33,8 @@ def summarize_results(results):
     for result in results:
         for name_type in all_names.keys():
             all_names[name_type].extend(result.get(name_type, []))
-    metric = calc_metrik(all_names)
-    return metric
+    return all_names
+
 
 
 
@@ -50,5 +50,5 @@ if __name__ == '__main__':
     summary = summarize_results(results)
 
     metric, non_conformant_names = calc_metrik(summary)
-    print(metric)
     print(non_conformant_names)
+    print(metric)

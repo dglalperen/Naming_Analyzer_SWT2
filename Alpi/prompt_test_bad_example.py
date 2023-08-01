@@ -26,8 +26,3 @@ def g():
 def h():
     i = A("John Doe", 20, [70, 80, 90])
     assert i.e() == 80
-
-
-# {
-#     "score": "0.2"
-# }

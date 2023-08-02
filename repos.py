@@ -1,7 +1,11 @@
-import json
+import glob
+from github import Github
+from git import Repo
+import os
 import sys
 import pandas as pd
 import requests
+import shutil
 
 def check_github_api_credentials(api_url, token):
     headers = {"Authorization": f"token {token}"}
@@ -12,6 +16,7 @@ def check_github_api_credentials(api_url, token):
     else:
         print(
             "Die angegebene GitHub API-URL und/oder der Token sind nicht korrekt. Bitte überprüfen Sie Ihre Eingaben.")
+        print(response.status_code)
         return False
 
 
@@ -56,8 +61,55 @@ def search_repositories(language, min_size, max_size, num_repos, github_token):
         return None
 
 
+def clone_repo(repo_link, github_token):
+    # Get repo name from the link
+    repo_name = "/".join(repo_link.split("/")[-2:])
+
+    # Initialize Github instance with your token
+    g = Github(github_token)
+
+    # Get repo instance
+    repo = g.get_repo(repo_name)
+
+    # Define repo directory
+    repo_dir = os.path.abspath(f'./repos/{repo_name}')
+
+    # Check if the repository already exists. If so, delete it before cloning again.
+    if os.path.exists(repo_dir):
+        print(f"Repository {repo_name} already exists. Deleting and cloning again.")
+        shutil.rmtree(repo_dir)
+
+    # Clone the repository
+    Repo.clone_from(repo_link, repo_dir)
+
+    # Get all Python files in the repository
+    python_files = glob.glob(os.path.join(repo_dir, '**/*.py'), recursive=True)
+
+    return python_files
+
+
+def delete_repo(repo_link):
+    # Get repo name from the link
+    repo_name = "/".join(repo_link.split("/")[-2:])
+
+    # Define repo directory
+    repo_dir = os.path.abspath(f'./repos/{repo_name}')
+
+    # Check if the repository exists. If so, delete it.
+    if os.path.exists(repo_dir):
+        shutil.rmtree(repo_dir)
+        print(f"Repository {repo_name} deleted.")
+    else:
+        print(f"Repository {repo_name} does not exist.")
+
+
+
+
+
+
+
 GITHUB_API_URL = "https://api.github.com"
-GITHUB_TOKEN = "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"
+GITHUB_TOKEN = "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"
 
 
 check_git = check_github_api_credentials(GITHUB_API_URL, GITHUB_TOKEN)
@@ -66,7 +118,7 @@ check_git = check_github_api_credentials(GITHUB_API_URL, GITHUB_TOKEN)
 
 if not check_git:
     sys.exit()
-
+"""
 language = input("Enter the programming language: ")
 min_size = input("Enter the minimum code size (in KB): ")
 max_size = input("Enter the maximum code size (in KB): ")
@@ -75,3 +127,5 @@ num_repos = input("Enter the number of repositories to search for: ")
 df = search_repositories(language, min_size, max_size, num_repos, GITHUB_TOKEN)
 
 print(df)
+"""
+

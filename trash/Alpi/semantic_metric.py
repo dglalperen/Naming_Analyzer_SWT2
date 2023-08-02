@@ -1,4 +1,4 @@
-from semantic_evaluation import request_code_improvement,ask_chatgpt
+from semantic_evaluation import  ask_chatgpt
 
 
 good_example = "./prompt_test_good_example.py"

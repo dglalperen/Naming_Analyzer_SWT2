@@ -1,7 +1,4 @@
 import unittest
-import json
-
-import openai
 
 from Alpi.semantic_evaluation import ask_chatgpt
 

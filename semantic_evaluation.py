@@ -1,18 +1,13 @@
 import json
 import re
 import openai
+import logging
 
 OPEN_API_TOKEN = "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"
 OPEN_API_TOKEN_WITH_GPT4 = "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"
 
-
-
-def ask_chatgpt(file_path, api_key):
+def ask_chatgpt(text_chunk, api_key):
     openai.api_key = api_key
-
-    # Read the file content
-    with open(file_path, "r") as file:
-        code_snippet = file.read()
 
     prompt = """
     Title: Advanced Python Source Code Naming Analysis
@@ -34,7 +29,7 @@ def ask_chatgpt(file_path, api_key):
     """
     messages = [
         {"role": "system", "content": prompt},
-        {"role": "user", "content": code_snippet},
+        {"role": "user", "content": text_chunk},
     ]
     response = openai.ChatCompletion.create(
         model="gpt-4", messages=messages, temperature=0.1
@@ -43,6 +38,14 @@ def ask_chatgpt(file_path, api_key):
     message = response["choices"][0]["message"]["content"]
     # Extract the numeric score from the AI's message
     score_json = extract_json_from_string(message)
+
+    # Log the chunk of code and the score JSON
+    print(f"Chunk: {text_chunk}")
+    print(f"Score JSON: {score_json}")
+
+    if score_json is None or 'score' not in score_json:
+        print(f'Could not calculate score for chunk: {text_chunk}')
+        return {'score': '0'}
 
     return score_json
 
@@ -81,12 +84,17 @@ def request_code_improvement(code_snippet):
     improved_code = response["choices"][0]["message"]["content"]
     return improved_code
 
-
 def get_score(data):
     try:
-        return data.get("score")
-    except AttributeError:
-        print("Invalid data")
+        score = data.get("score")
+        # Check if score is a valid float
+        if score is not None:
+            float(score)
+        else:
+            score = 'N/A'  # Or some other default value
+    except (AttributeError, ValueError):
+        score = 'N/A'  # Or some other default value
+    return score
 
 
 

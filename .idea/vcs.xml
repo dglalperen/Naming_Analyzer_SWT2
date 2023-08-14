@@ -2,8 +2,8 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/repos/alex/pyelection" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/repos/frank038/gspeechtray" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repos/spy16/pyschemes" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/repos/vfaronov/httpolice" vcs="Git" />
   </component>
 </project>

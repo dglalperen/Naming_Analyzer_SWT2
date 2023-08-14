@@ -4,6 +4,7 @@ from nltk.tokenize import word_tokenize
 import logging
 import os
 
+# test
 
 
 def split_into_chunks(text, chunk_size):
@@ -21,10 +22,11 @@ def split_into_chunks(text, chunk_size):
     chunks = []
 
     for i in range(0, len(tokens), chunk_size):
-        chunk = ' '.join(tokens[i:i + chunk_size])
+        chunk = " ".join(tokens[i : i + chunk_size])
         chunks.append(chunk)
 
     return chunks
+
 
 def rate_repository_semantic(python_files, openai_token):
     """
@@ -81,16 +83,17 @@ def rate_repository_semantic(python_files, openai_token):
                     # Log an error if the score is not a valid number
                     print(f'Invalid score "{score}" for file: {file}')
                     unrated_chunks_counter += 1
-                    with open(f"{unrated_chunks_dir}/_chunk_{unrated_chunks_counter}.py", "w") as unrated_file:
+                    with open(
+                        f"{unrated_chunks_dir}/_chunk_{unrated_chunks_counter}.py", "w"
+                    ) as unrated_file:
                         unrated_file.write(chunk)
 
         except Exception as e:
             # Log any other errors that occur during processing
-            print(f'Error processing file: {e}')
+            print(f"Error processing file: {e}")
 
     # Calculate the average score
     average_score = total_score / total_files if total_files > 0 else 0
 
     # Return the average score as a string in a dictionary
     return {"score": str(average_score)}
-

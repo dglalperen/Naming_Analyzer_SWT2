@@ -39,4 +39,4 @@ if __name__ == "__main__":
             print(f'Error occurred during the evaluation of repo {repo_url}: {e}')
 
     # Save the updated DataFrame to a CSV
-    repositories_df.to_csv('output.csv', index=False)
+    repositories_df.to_csv('rates.csv', index=False)

@@ -12,22 +12,8 @@ from utils import clone_repo
 
 def improve_repository(repo_link, openai_token, github_token):
     try:
-        # Get repo name from the link
-        repo_name = repo_link.split("/")[-1]
-
-        # Initialize GitHub instance with your token
-        g = Github(github_token)
-
-        # Get repo instance
-        repo = g.get_repo(repo_name)
-
-        # Clone the repository
-        repo_dir = os.path.join(os.getcwd(), repo_name)
-        Repo.clone_from(repo_link, repo_dir)
-
-        # Find all .py files in the cloned repo
-        os.chdir(repo_dir)
-        python_files = glob.glob("**/*.py", recursive=True)
+        # Clone the repository using the provided function and get all Python files
+        python_files = clone_repo(repo_link, github_token)
 
         # Create a new directory for improved files
         improved_dir = os.path.join(
@@ -40,7 +26,7 @@ def improve_repository(repo_link, openai_token, github_token):
             with open(file, "r") as f:
                 code_snippet = f.read()
             try:
-                improved_code = request_code_improvement(code_snippet)
+                improved_code = request_code_improvement(code_snippet, openai_token)
                 if (
                     improved_code
                 ):  # Only save the improved code if it's not None or empty
@@ -70,20 +56,14 @@ def improve_and_evaluate_repositories(gpt3_token, gpt4_token, github_token):
     for repo_url in repo_urls:
         print(f"Improving and evaluating repository: {repo_url}")
 
-        # Verbessern Sie das Repository mit dem GPT-3-Token
+        # Improve the repository using GPT-3-Token and clone with GitHub token
         improve_repository(repo_url, gpt3_token, github_token)
 
-        # Clone the repository (again) to get the improved files
-        repo_name = repo_url.split("/")[-1]
-        improved_repo_dir = os.path.join(os.getcwd(), f"improved_{repo_name}")
-
-        # Find all improved .py files
-        os.chdir(improved_repo_dir)
-        improved_python_files = glob.glob("**/*.py", recursive=True)
+        # Clone the repository using the provided function and get all Python files
+        python_files = clone_repo(repo_url, github_token)
 
         # Bewerten Sie das verbesserte Repository erneut mit dem GPT-4-Token
-        rating = rate_repository_semantic(improved_python_files, gpt4_token)
-        # syntaktische bewertung
+        rating = rate_repository_semantic(python_files, gpt4_token)
 
         # Fügen Sie die Ergebnisse dem DataFrame hinzu
         results_df = results_df.append(

@@ -7,9 +7,9 @@ OPEN_API_TOKEN = "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"
 OPEN_API_TOKEN_WITH_GPT4 = "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"
 
 
-def ask_chatgpt(text_chunk, api_key):
+def ask_chatgpt(text_chunk, api_key, max_retries=3):
     openai.api_key = api_key
-
+    retries = 0
     prompt = """
     Title: Advanced Python Source Code Naming Analysis
 
@@ -29,27 +29,32 @@ def ask_chatgpt(text_chunk, api_key):
         "score": "<score>"
     }
 Here, <score> represents the calculated score between 0 and 1, expressed as a decimal number in string format with a granularity of 0.1. This score should reflect the overall quality of naming in the codebase, taking into account the factors mentioned above. It is the value of the "score" key in the provided JSON schema."""
-    messages = [
-        {"role": "system", "content": prompt},
-        {"role": "user", "content": text_chunk},
-    ]
-    response = openai.ChatCompletion.create(
-        model="gpt-4", messages=messages, temperature=0.1
+
+    while retries < max_retries:
+        messages = [
+            {"role": "system", "content": prompt + text_chunk},
+        ]
+        response = openai.ChatCompletion.create(
+            model="gpt-4", messages=messages, temperature=0.01
+        )
+
+        message = response["choices"][0]["message"]["content"]
+        score_json = extract_json_from_string(message)
+
+        score = get_score(score_json)
+
+        if score == "N/A":
+            retries += 1
+            print(
+                f"Invalid score for chunk: {text_chunk}. Retrying {retries}/{max_retries}..."
+            )
+        else:
+            return score_json
+
+    print(
+        f"Could not calculate score for chunk: {text_chunk} after {max_retries} retries."
     )
-
-    message = response["choices"][0]["message"]["content"]
-    # Extract the numeric score from the AI's message
-    score_json = extract_json_from_string(message)
-
-    # Log the chunk of code and the score JSON
-    # print(f"Chunk: {text_chunk}")
-    # print(f"Score JSON: {score_json}")
-
-    if score_json is None or "score" not in score_json:
-        print(f"Could not calculate score for chunk: {text_chunk}")
-        return {"score": "0"}
-
-    return score_json
+    return {"score": "0"}
 
 
 def request_code_improvement(code_snippet, api_key=OPEN_API_TOKEN):
@@ -63,21 +68,20 @@ def request_code_improvement(code_snippet, api_key=OPEN_API_TOKEN):
     Prompt:
     As a highly trained AI model developed by OpenAI, your task is to analyze a given Python source code and provide corrections to enhance both the semantic appropriateness and syntactic correctness. The goal is to improve the quality, suitability, and consistency of the names used for functions (excluding __init__ and other dunder methods), classes, and variables (excluding loop iterators like i and j), and to ensure the code aligns with PEP 8 standards.
 
-    In your analysis and correction, consider the following criteria:
+    Your corrections should be returned in the form of the modified Python source code, enclosed between lines of four asterisks (****), with all the proposed naming and syntactic changes incorporated. Be sure to provide explanations for your changes so the user can understand your reasoning.
 
-    Descriptiveness: The names should be descriptive and relevant to their associated code. If the current names are not clear or misleading, propose better alternatives that convey the purpose of the code more accurately.
+    Criteria:
+    - Descriptiveness: Propose descriptive and relevant names.
+    - Length: Provide concise and meaningful names.
+    - Common Misuses: Avoid generic terms and Python reserved words.
+    - Consistency: Ensure naming consistency across the codebase.
+    - Domain-Specific Conventions: Align with any domain-specific practices.
+    - Syntactic Correctness: Align with PEP 8 guidelines for Python code.
 
-    Length: Very short names (like 'a' or 'x') may not provide enough information about what they represent, while very long names can be cumbersome. Provide suggestions to make the names more concise and meaningful.
-
-    Common Misuses: Names consisting of generic terms (like 'data', 'value') or Python reserved words should be avoided. Suggest more specific and relevant alternatives if such names are present.
-
-    Consistency: Check for consistency in naming conventions across the codebase and propose corrections to ensure consistency.
-
-    Domain-Specific Conventions: Where applicable, adjust the names to align with domain-specific conventions or practices.
-
-    Syntactic Correctness: Ensure that the code follows the PEP 8 guidelines for Python code styling and formatting. Correct any violations and make the code more readable and maintainable according to these standards.
-
-    Your corrections should be returned in the form of the modified Python source code, with all the proposed naming and syntactic changes incorporated. Be sure to provide explanations for your changes so the user can understand your reasoning.""",
+    Example Output:
+    ****
+    improved code
+    ****""",
         },
         {"role": "user", "content": code_snippet},
     ]

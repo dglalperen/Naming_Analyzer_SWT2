@@ -8,6 +8,8 @@ from rate_repository import rate_repository_semantic
 from semantic_evaluation import request_code_improvement
 import pandas as pd
 
+from utils import clone_repo
+
 
 def improve_repository(repo_link, openai_token):
     try:
@@ -52,7 +54,7 @@ def improve_repository(repo_link, openai_token):
         print(f"Error processing repository: {e}")
 
 
-def improve_and_evaluate_repositories(gpt3_token, gpt4_token):
+def improve_and_evaluate_repositories(gpt3_token, gpt4_token, github_token):
     # Lesen Sie die Repository-URLs aus der CSV-Datei
     with open("repositories.csv", "r") as csv_file:
         reader = csv.reader(csv_file)
@@ -69,16 +71,11 @@ def improve_and_evaluate_repositories(gpt3_token, gpt4_token):
         # Verbessern Sie das Repository mit dem GPT-3-Token
         improve_repository(repo_url, gpt3_token)
 
-        # Clone the repository (again) to get the improved files
-        repo_name = repo_url.split("/")[-1]
-        improved_repo_dir = os.path.join(os.getcwd(), f"improved_{repo_name}")
-
-        # Find all improved .py files
-        os.chdir(improved_repo_dir)
-        improved_python_files = glob.glob("**/*.py", recursive=True)
+        # Clone the repository using the provided function and get all Python files
+        python_files = clone_repo(repo_url, github_token)
 
         # Bewerten Sie das verbesserte Repository erneut mit dem GPT-4-Token
-        rating = rate_repository_semantic(improved_python_files, gpt4_token)
+        rating = rate_repository_semantic(python_files, gpt4_token)
 
         # Fügen Sie die Ergebnisse dem DataFrame hinzu
         results_df = results_df.append(

@@ -11,12 +11,17 @@ from utils import clone_repo
 
 
 def improve_repository(repo_link, openai_token, github_token):
+    # Create a global directory for all improved repositories
+    global_improved_dir = os.path.join(os.getcwd(), "improved_repos")
+    os.makedirs(global_improved_dir, exist_ok=True)
+
     # Clone the repository using the provided function and get all Python files
     python_files = clone_repo(repo_link, github_token)
 
-    # Create a directory for improved files
-    improved_dir = os.path.join(os.getcwd(), f"improved_{os.path.basename(repo_link)}")
-    os.makedirs(improved_dir, exist_ok=True)
+    # Create a directory for the improved repository inside the global directory
+    repo_name = os.path.basename(repo_link)
+    improved_repo_dir = os.path.join(global_improved_dir, f"improved_{repo_name}")
+    os.makedirs(improved_repo_dir, exist_ok=True)
 
     # Iterate over the Python files and improve them
     for file in python_files:
@@ -25,12 +30,12 @@ def improve_repository(repo_link, openai_token, github_token):
 
         improved_code = request_code_improvement(code_snippet, openai_token)
         if improved_code:  # Save the improved code if it's not None or empty
-            # Save the improved code in the improved directory
-            improved_file_path = os.path.join(improved_dir, os.path.basename(file))
+            # Save the improved code in the improved repository directory
+            improved_file_path = os.path.join(improved_repo_dir, os.path.basename(file))
             with open(improved_file_path, "w") as f:
                 f.write(improved_code)
 
-    return improved_dir
+    return improved_repo_dir
 
 
 def improve_and_evaluate_repositories(gpt3_token, gpt4_token, github_token):

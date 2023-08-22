@@ -40,8 +40,8 @@ def ask_chatgpt(text_chunk, api_key):
     score_json = extract_json_from_string(message)
 
     # Log the chunk of code and the score JSON
-    print(f"Chunk: {text_chunk}")
-    print(f"Score JSON: {score_json}")
+    # print(f"Chunk: {text_chunk}")
+    # print(f"Score JSON: {score_json}")
 
     if score_json is None or 'score' not in score_json:
         print(f'Could not calculate score for chunk: {text_chunk}')

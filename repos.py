@@ -1,139 +1,100 @@
-import glob
-from github import Github
-from git import Repo
-import os
+from utils import check_github_api_credentials
 import sys
 import pandas as pd
 import requests
-import shutil
 
-
-def check_github_api_credentials(api_url, token):
-    headers = {"Authorization": f"token {token}"}
+def get_default_branch(repo_full_name, github_token):
+    api_url = f"https://api.github.com/repos/{repo_full_name}"
+    headers = {"Authorization": f"token {github_token}"}
     response = requests.get(api_url, headers=headers)
 
     if response.status_code == 200:
-        return True
+        return response.json().get("default_branch", "main")
     else:
-        print(
-            "Die angegebene GitHub API-URL und/oder der Token sind nicht korrekt. Bitte überprüfen Sie Ihre Eingaben."
-        )
-        print(response.status_code)
-        return False
+        print(f"Problem beim Abrufen des Standardbranches von {repo_full_name}")
+        return "main"
 
+def count_python_files(repo_full_name, github_token):
+    default_branch = get_default_branch(repo_full_name, github_token)
+    api_url = f"https://api.github.com/repos/{repo_full_name}/git/trees/{default_branch}?recursive=1"
 
-def search_repositories(language, min_size, max_size, num_repos, github_token):
-    if min_size == "-":
-        min_size = 1000
-    if max_size == "-":
-        max_size = 100000
+    headers = {"Authorization": f"token {github_token}"}
+    response = requests.get(api_url, headers=headers)
+
+    if response.status_code == 200:
+        tree = response.json()["tree"]
+        return sum(1 for item in tree if item["path"].endswith(".py"))
+    else:
+        print(f"Problem beim Abrufen des Inhalts von {repo_full_name}")
+        return 0
+
+def search_repositories(language, min_size, max_size, num_repos, max_py_files, year, github_token):
 
     min_size = int(min_size) * 1024  # Konvertiere KB in Bytes
     max_size = int(max_size) * 1024  # Konvertiere KB in Bytes
     num_repos = int(num_repos)
 
     api_url = "https://api.github.com/search/repositories"
-    query = f"language:{language} size:{min_size}..{max_size}"
+    query = f"language:Python size:{min_size}..{max_size} created:>{year}-01-01"
 
-    if min_size != 1000:
-        query += f" size:>{min_size}"
-    if max_size != 100000:
-        query += f" size:<{max_size}"
+    params = {"q": query, "sort": "stars", "order": "asc",
+              "per_page": 100}  # Sort by least stars first
+    headers = {"Authorization": f"token {github_token}"}
 
-    params = {"q": query, "sort": "stars", "order": "desc", "per_page": num_repos}
+    filtered_repos = []
+    page_num = 1
 
-    headers = {
-        "Authorization": f"token {github_token}"
-    }  # Ersetzen Sie YOUR_GITHUB_TOKEN mit Ihrem persönlichen Token
-    response = requests.get(api_url, headers=headers, params=params)
+    while len(filtered_repos) < num_repos:
+        params["page"] = page_num
+        response = requests.get(api_url, headers=headers, params=params)
 
-    if response.status_code == 200:
+        if response.status_code != 200:
+            print(f"Fehlercode: {response.status_code}")
+            print(f"Fehlernachricht: {response.text}")
+            print(
+                "Es gab ein Problem beim Abrufen der Repositories. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut.")
+            return None
+
         repos = response.json()["items"]
-        repo_urls = [repo["html_url"] for repo in repos]
 
-        # Erstellen Sie einen Pandas DataFrame mit den Repository-URLs
-        df = pd.DataFrame(repo_urls, columns=["Repository URL"])
+        # Sofort abbrechen, wenn keine weiteren Ergebnisse vorhanden sind
+        if not repos:
+            break
 
-        # Speichern Sie das DataFrame in einer CSV-Datei
-        df.to_csv("repositories.csv", index=False)
+        for repo in repos:
+            if len(filtered_repos) >= num_repos:
+                break
+            py_files_count = count_python_files(repo["full_name"], github_token)
+            if py_files_count <= max_py_files:
+                filtered_repos.append(repo)
 
-        print(
-            "Die Repositories wurden erfolgreich in der Datei 'repositories.csv' gespeichert."
-        )
-        return df
-    else:
-        print(
-            "Es gab ein Problem beim Abrufen der Repositories. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut."
-        )
-        return None
+        page_num += 1
 
+    repo_urls = [repo["html_url"] for repo in filtered_repos]
 
-def clone_repo(repo_link, github_token):
-    # Get repo name from the link
-    repo_name = "/".join(repo_link.split("/")[-2:])
+    # Erstellen Sie einen Pandas DataFrame mit den Repository-URLs
+    df = pd.DataFrame(repo_urls, columns=["Repository URL"])
 
-    # Initialize Github instance with your token
-    g = Github(github_token)
+    # Speichern Sie das DataFrame in einer CSV-Datei
+    df.to_csv("repositories.csv", index=False)
 
-    # Get repo instance
-    repo = g.get_repo(repo_name)
+    print("Die Repositories wurden erfolgreich in der Datei 'repositories.csv' gespeichert.")
+    return df
 
-    # Define repo directory
-    repo_dir = os.path.abspath(f"./repos/{repo_name}")
+if __name__ == "__main__":
+    GITHUB_API_URL = "https://api.github.com"
+    GITHUB_TOKEN = "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"
 
-    # Check if the repository already exists. If so, delete it before cloning again.
-    if os.path.exists(repo_dir):
-        print(f"Repository {repo_name} already exists. Deleting and cloning again.")
-        shutil.rmtree(repo_dir)
+    if not check_github_api_credentials(GITHUB_API_URL, GITHUB_TOKEN):
+        sys.exit()
 
-    # Clone the repository
-    Repo.clone_from(repo_link, repo_dir)
+    language = input("Enter the programming language: ")
+    min_size = input("Enter the minimum code size (in KB): ")
+    max_size = input("Enter the maximum code size (in KB): ")
+    num_repos = input("Enter the number of repositories to search for: ")
+    max_py_files = int(input("Enter the maximum number of .py files in a repository: "))
+    year = input("Enter the starting year for repository search: ")
 
-    # Get all Python files in the repository
-    python_files = glob.glob(os.path.join(repo_dir, "**/*.py"), recursive=True)
+    df = search_repositories(language, min_size, max_size, num_repos, max_py_files, year, GITHUB_TOKEN)
 
-    # Print the list of Python files identified
-    print(f"Identified Python files in {repo_name}:")
-    for file in python_files:
-        print(file)
-
-    return python_files
-
-
-# We are just modifying the function for diagnostic purposes. You can run this function to see the list of Python files identified.
-
-
-def delete_repo(repo_link):
-    # Get repo name from the link
-    repo_name = "/".join(repo_link.split("/")[-2:])
-
-    # Define repo directory
-    repo_dir = os.path.abspath(f"./repos/{repo_name}")
-
-    # Check if the repository exists. If so, delete it.
-    if os.path.exists(repo_dir):
-        shutil.rmtree(repo_dir)
-        print(f"Repository {repo_name} deleted.")
-    else:
-        print(f"Repository {repo_name} does not exist.")
-
-
-GITHUB_API_URL = "https://api.github.com"
-GITHUB_TOKEN = "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"
-
-
-check_git = check_github_api_credentials(GITHUB_API_URL, GITHUB_TOKEN)
-
-
-if not check_git:
-    sys.exit()
-"""
-language = input("Enter the programming language: ")
-min_size = input("Enter the minimum code size (in KB): ")
-max_size = input("Enter the maximum code size (in KB): ")
-num_repos = input("Enter the number of repositories to search for: ")
-
-df = search_repositories(language, min_size, max_size, num_repos, GITHUB_TOKEN)
-
-print(df)
-"""
+    print(df)

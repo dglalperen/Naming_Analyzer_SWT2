@@ -1,5 +1,4 @@
 import re
-import nltk
 import unittest
 from nltk.corpus import words
 from wordsegment import load, segment

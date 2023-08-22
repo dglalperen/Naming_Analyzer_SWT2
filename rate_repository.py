@@ -85,6 +85,9 @@ def rate_repository_semantic(python_files, openai_token):
         print(f"Processing file: {file}\n")
 
         try:
+            # Log the file being processed
+            # print(f"Processing file: {file}")
+
             # Read the file content
             with open(file, "r") as f:
                 file_content = f.read()
@@ -97,19 +100,8 @@ def rate_repository_semantic(python_files, openai_token):
 
             # Iterate over all chunks in the current file
             for i, chunk in enumerate(file_chunks):
-                # Print the chunk being processed and its content
-                print(f"Processing chunk {i+1}/{len(file_chunks)}:")
-                print("-" * 20)
-                print(chunk)
-                print("-" * 20 + "\n")
-
-                # Get the number of names in the chunk
-                names_count = count_names(chunk)
-
-                # If there are no names, skip this chunk
-                if names_count == 0:
-                    print("Skipping chunk due to no names.")
-                    continue
+                # Log the chunk being processed
+                # print(f"Processing chunk {i+1}/{len(file_chunks)}")
 
                 # Ask the model for a score for the current chunk
                 score_json = ask_chatgpt(chunk, openai_token)
@@ -122,8 +114,8 @@ def rate_repository_semantic(python_files, openai_token):
                     total_weighted_score += score_value * names_count
                     total_names += names_count
 
-                    # Print the score of the chunk
-                    print(f"Chunk score: {score_value}\n")
+                    # Log the score of the chunk
+                    # print(f"Chunk score: {score_value}")
 
                 except ValueError:
                     # Print an error if the score is not a valid number
@@ -145,4 +137,5 @@ def rate_repository_semantic(python_files, openai_token):
     print(f"\nRating process completed. Average score: {average_score}")
 
     # Return the average score as a string in a dictionary
-    return {"score": str(average_score)}
+    return {"semantic_score": str(average_score)}
+

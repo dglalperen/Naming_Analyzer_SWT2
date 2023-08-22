@@ -1,8 +1,5 @@
 import ast
-from repos import clone_repo, delete_repo
 import os
-import subprocess
-import shutil
 
 
 def analyze_code(file_path):

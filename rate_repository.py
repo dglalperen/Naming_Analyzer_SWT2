@@ -53,89 +53,54 @@ def split_into_chunks(text, max_chunk_size):
 
 
 def rate_repository_semantic(python_files, openai_token):
-    """
-    Calculate the average semantic score of a list of Python files.
-
-    Args:
-    python_files (list of str): The Python files to score.
-    openai_token (str): The OpenAI API token.
-
-    Returns:
-    dict: The average semantic score of the Python files.
-    """
-    total_weighted_score = 0  # The total weighted score for all chunks
-    total_names = 0  # The total number of names in all chunks
+    total_weighted_score = 0
+    total_names = 0
     unrated_chunks_counter = 0
     unrated_chunks_dir = "./unrated_chunks"
 
-    # Create directory for unrated chunks if it does not exist
     os.makedirs(unrated_chunks_dir, exist_ok=True)
-
-    # Print the start of the process
     print("Starting the rating process for Python files...")
 
     # Function to count the number of names in a chunk
     def count_names(chunk):
-        # This regex captures python variable, function, and class names
         return len(re.findall(r"\b[A-Za-z_][A-Za-z0-9_]*\b", chunk))
 
     # Iterate over all Python files
     for file in python_files:
-        print("=" * 40)  # Separator for clarity
+        print("=" * 40)
         print(f"Processing file: {file}\n")
 
+        # Read the file content
         try:
-            # Log the file being processed
-            # print(f"Processing file: {file}")
-
-            # Read the file content
             with open(file, "r") as f:
                 file_content = f.read()
-
-            # Split large files into chunks
-            file_chunks = split_into_chunks(file_content, 6000)
-
-            # Print the number of chunks for the current file
-            print(f"File {file} has been split into {len(file_chunks)} chunks.\n")
-
-            # Iterate over all chunks in the current file
-            for i, chunk in enumerate(file_chunks):
-                # Log the chunk being processed
-                # print(f"Processing chunk {i+1}/{len(file_chunks)}")
-
-                # Ask the model for a score for the current chunk
-                score_json = ask_chatgpt(chunk, openai_token)
-                score = get_score(score_json)
-
-                # Check if the score is a valid number
-                try:
-                    score_value = float(score)
-                    # Update the weighted score and total names count
-                    total_weighted_score += score_value * names_count
-                    total_names += names_count
-
-                    # Log the score of the chunk
-                    # print(f"Chunk score: {score_value}")
-
-                except ValueError:
-                    # Print an error if the score is not a valid number
-                    print(f'Invalid score "{score}" for file: {file}')
-                    unrated_chunks_counter += 1
-                    with open(
-                        f"{unrated_chunks_dir}/_chunk_{unrated_chunks_counter}.py", "w"
-                    ) as unrated_file:
-                        unrated_file.write(chunk)
-
         except Exception as e:
-            # Print any other errors that occur during processing
-            print(f"Error processing file {file}: {e}")
+            print(f"Error reading file {file}: {e}")
+            continue
 
-    # Calculate the average score
+        # Split large files into chunks
+        file_chunks = split_into_chunks(file_content, 6000)
+        print(f"File {file} has been split into {len(file_chunks)} chunks.\n")
+
+        # Process each chunk
+        for i, chunk in enumerate(file_chunks):
+            names_count = count_names(chunk)
+            score_json = ask_chatgpt(chunk, openai_token)
+            score = get_score(score_json)
+
+            try:
+                score_value = float(score)
+                total_weighted_score += score_value * names_count
+                total_names += names_count
+            except ValueError:
+                print(f'Invalid score "{score}" for file: {file}')
+                unrated_chunks_counter += 1
+                with open(
+                    f"{unrated_chunks_dir}/_chunk_{unrated_chunks_counter}.py", "w"
+                ) as unrated_file:
+                    unrated_file.write(chunk)
+
     average_score = total_weighted_score / total_names if total_names > 0 else 0
-
-    # Print the completion of the process
     print(f"\nRating process completed. Average score: {average_score}")
 
-    # Return the average score as a string in a dictionary
     return {"semantic_score": str(average_score)}
-

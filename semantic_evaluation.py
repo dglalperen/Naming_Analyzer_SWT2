@@ -59,26 +59,26 @@ def request_code_improvement(code_snippet):
         {
             "role": "system",
             "content": """
-    Title: Advanced Python Source Code Semantic Correction
+    Title: Advanced Python Source Code Semantic and Syntactic Correction
 
     Prompt:
-    As a highly trained AI model developed by OpenAI, your task is to analyze a given Python source code and provide corrections to enhance the semantic appropriateness. The goal is to improve the quality, suitability, and consistency of the names used for functions (excluding `__init__` and other dunder methods), classes, and variables (excluding loop iterators like `i` and `j`).
+    As a highly trained AI model developed by OpenAI, your task is to analyze a given Python source code and provide corrections to enhance both the semantic appropriateness and syntactic correctness. The goal is to improve the quality, suitability, and consistency of the names used for functions (excluding __init__ and other dunder methods), classes, and variables (excluding loop iterators like i and j), and to ensure the code aligns with PEP 8 standards.
 
     In your analysis and correction, consider the following criteria:
 
-    - **Descriptiveness**: The names should be descriptive and relevant to their associated code. If the current names are not clear or misleading, propose better alternatives that convey the purpose of the code more accurately. For example, a function meant to calculate an average could be named 'calculate_average', while 'calc_avg' might be somewhat less clear, and 'function1' would be vague and misleading.
+    Descriptiveness: The names should be descriptive and relevant to their associated code. If the current names are not clear or misleading, propose better alternatives that convey the purpose of the code more accurately.
 
-    - **Length**: Very short names (like 'a' or 'x') may not provide enough information about what they represent, while very long names can be cumbersome and may be a sign of trying to do too much with a single variable or function. Provide suggestions to make the names more concise and meaningful.
+    Length: Very short names (like 'a' or 'x') may not provide enough information about what they represent, while very long names can be cumbersome. Provide suggestions to make the names more concise and meaningful.
 
-    - **Common Misuses**: Names consisting of generic terms (like 'data', 'value') or Python reserved words should be avoided unless their usage is universally understood in the context of programming. If such names are present in the code, suggest more specific and relevant alternatives.
+    Common Misuses: Names consisting of generic terms (like 'data', 'value') or Python reserved words should be avoided. Suggest more specific and relevant alternatives if such names are present.
 
-    - **Consistency**: Check for consistency in naming conventions across the codebase. A name might be semantically correct in isolation but if it's not consistent with the rest of the codebase, it can be confusing for others reading the code. Propose corrections to ensure consistency.
+    Consistency: Check for consistency in naming conventions across the codebase and propose corrections to ensure consistency.
 
-    - **Domain-Specific Conventions**: Depending on the purpose of the program, there may be specific naming conventions or practices that should be followed. Where applicable, adjust the names to align with such conventions.
+    Domain-Specific Conventions: Where applicable, adjust the names to align with domain-specific conventions or practices.
 
-    Your corrections should be returned in the form of the modified Python source code, with all the proposed naming changes incorporated. Be sure to provide explanations for your changes so the user can understand your reasoning.
-    
-    """,
+    Syntactic Correctness: Ensure that the code follows the PEP 8 guidelines for Python code styling and formatting. Correct any violations and make the code more readable and maintainable according to these standards.
+
+    Your corrections should be returned in the form of the modified Python source code, with all the proposed naming and syntactic changes incorporated. Be sure to provide explanations for your changes so the user can understand your reasoning.""",
         },
         {"role": "user", "content": code_snippet},
     ]

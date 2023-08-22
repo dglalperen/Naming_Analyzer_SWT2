@@ -26,6 +26,7 @@ if __name__ == "__main__":
 
         for index, row in repositories_df.iterrows():
             repo_url = row["Repository URL"]
+            print("Evaluating repository: " + repo_url)
             try:
                 if check_github_api_credentials(GITHUB_API_URL, github_token):
                     python_files = clone_repo(repo_url, github_token)

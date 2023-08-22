@@ -66,27 +66,23 @@ def request_code_improvement(code_snippet, api_key=OPEN_API_TOKEN):
     Title: Advanced Python Source Code Semantic and Syntactic Correction
 
     Prompt:
-    As a highly trained AI model developed by OpenAI, your task is to analyze a given Python source code and provide corrections to enhance both the semantic appropriateness and syntactic correctness. The goal is to improve the quality, suitability, and consistency of the names used for functions (excluding __init__ and other dunder methods), classes, and variables (excluding loop iterators like i and j), and to ensure the code aligns with PEP 8 standards.
-
-    Your corrections should be returned in the form of the modified Python source code, enclosed between lines of four asterisks (****), with all the proposed naming and syntactic changes incorporated. Be sure to provide explanations for your changes so the user can understand your reasoning.
-
+    As a highly trained AI model developed by OpenAI, your task is to analyze a given Python source code and make corrections to the naming of variables, classes, functions, etc. to improve both semantic appropriateness and syntactic correctness. The goal is to improve the quality, appropriateness, and consistency of the names used for functions (except __init__ and other Dunder methods), classes, and variables (except loop iterators such as i and j), and to ensure that the code conforms to PEP 8 standards.
+    
+    
     Criteria:
-    - Descriptiveness: Propose descriptive and relevant names.
-    - Length: Provide concise and meaningful names.
-    - Common Misuses: Avoid generic terms and Python reserved words.
-    - Consistency: Ensure naming consistency across the codebase.
-    - Domain-Specific Conventions: Align with any domain-specific practices.
-    - Syntactic Correctness: Align with PEP 8 guidelines for Python code.
-
-    Example Output:
-    ****
-    improved code
-    ****""",
+    - Descriptiveness: suggest descriptive and relevant names.
+    - Length: provide concise and meaningful names.
+    - Common misuses: avoid generic terms and reserved Python words.
+    - Consistency: Ensure that naming is consistent throughout the code base.
+    - Domain-specific conventions: Adhere to all domain-specific practices.
+    - Syntactic correctness: conform to PEP 8 guidelines for Python code.
+    
+    Your corrections should be returned in the form of the modified Python source code, which includes all suggested naming and syntactic name changes. Do not output any other text besides the code."""
         },
         {"role": "user", "content": code_snippet},
     ]
 
-    response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages)
+    response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages, temperature=0.1)
 
     improved_code = response["choices"][0]["message"]["content"]
     return improved_code

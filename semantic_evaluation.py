@@ -52,7 +52,8 @@ Here, <score> represents the calculated score between 0 and 1, expressed as a de
     return score_json
 
 
-def request_code_improvement(code_snippet):
+def request_code_improvement(code_snippet, api_key=OPEN_API_TOKEN):
+    openai.api_key = api_key
     messages = [
         {
             "role": "system",

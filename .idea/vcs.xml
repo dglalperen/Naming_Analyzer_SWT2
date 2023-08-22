@@ -2,7 +2,6 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repos/Meehow202/Mindcrack" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repos/oapdf1/OAPDF_31" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/repos/oapdf1/OAPDF_11" vcs="Git" />
   </component>
 </project>

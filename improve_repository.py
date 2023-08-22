@@ -9,8 +9,8 @@ from semantic_evaluation import request_code_improvement
 import pandas as pd
 from utils import clone_repo
 
-def improve_repository(repo_link, openai_token, github_token):
 
+def improve_repository(repo_link, openai_token, github_token):
     try:
         # Get repo name from the link
         repo_name = repo_link.split("/")[-1]
@@ -30,13 +30,14 @@ def improve_repository(repo_link, openai_token, github_token):
         python_files = glob.glob("**/*.py", recursive=True)
 
         # Create a new directory for improved files
-        improved_dir = os.path.join(os.getcwd(), f"improved_{repo_name}")
+        improved_dir = os.path.join(
+            os.getcwd(), f"improved_{os.path.basename(repo_link)}"
+        )
         os.makedirs(improved_dir, exist_ok=True)
 
         # Iterate over the Python files and improve them
         for file in python_files:
-            file_path = os.path.join(repo_dir, file)
-            with open(file_path, "r") as f:
+            with open(file, "r") as f:
                 code_snippet = f.read()
             try:
                 improved_code = request_code_improvement(code_snippet)
@@ -44,7 +45,9 @@ def improve_repository(repo_link, openai_token, github_token):
                     improved_code
                 ):  # Only save the improved code if it's not None or empty
                     # Save the improved code in the new directory
-                    improved_file_path = os.path.join(improved_dir, file)
+                    improved_file_path = os.path.join(
+                        improved_dir, os.path.basename(file)
+                    )
                     with open(improved_file_path, "w") as f:
                         f.write(improved_code)
             except Exception as e:
@@ -81,7 +84,6 @@ def improve_and_evaluate_repositories(gpt3_token, gpt4_token, github_token):
         # Bewerten Sie das verbesserte Repository erneut mit dem GPT-4-Token
         rating = rate_repository_semantic(improved_python_files, gpt4_token)
         # syntaktische bewertung
-
 
         # Fügen Sie die Ergebnisse dem DataFrame hinzu
         results_df = results_df.append(

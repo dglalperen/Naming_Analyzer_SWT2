@@ -7,15 +7,16 @@ from git import Repo
 from rate_repository import rate_repository_semantic
 from semantic_evaluation import request_code_improvement
 import pandas as pd
+from utils import clone_repo
 
+def improve_repository(repo_link, openai_token, github_token):
 
-def improve_repository(repo_link, openai_token):
     try:
         # Get repo name from the link
         repo_name = repo_link.split("/")[-1]
 
         # Initialize GitHub instance with your token
-        g = Github(openai_token)
+        g = Github(github_token)
 
         # Get repo instance
         repo = g.get_repo(repo_name)
@@ -38,7 +39,7 @@ def improve_repository(repo_link, openai_token):
             with open(file_path, "r") as f:
                 code_snippet = f.read()
             try:
-                improved_code = request_code_improvement(code_snippet, openai_token)
+                improved_code = request_code_improvement(code_snippet)
                 if (
                     improved_code
                 ):  # Only save the improved code if it's not None or empty
@@ -52,7 +53,7 @@ def improve_repository(repo_link, openai_token):
         print(f"Error processing repository: {e}")
 
 
-def improve_and_evaluate_repositories(gpt3_token, gpt4_token):
+def improve_and_evaluate_repositories(gpt3_token, gpt4_token, github_token):
     # Lesen Sie die Repository-URLs aus der CSV-Datei
     with open("repositories.csv", "r") as csv_file:
         reader = csv.reader(csv_file)
@@ -67,7 +68,7 @@ def improve_and_evaluate_repositories(gpt3_token, gpt4_token):
         print(f"Improving and evaluating repository: {repo_url}")
 
         # Verbessern Sie das Repository mit dem GPT-3-Token
-        improve_repository(repo_url, gpt3_token)
+        improve_repository(repo_url, gpt3_token, github_token)
 
         # Clone the repository (again) to get the improved files
         repo_name = repo_url.split("/")[-1]
@@ -79,6 +80,8 @@ def improve_and_evaluate_repositories(gpt3_token, gpt4_token):
 
         # Bewerten Sie das verbesserte Repository erneut mit dem GPT-4-Token
         rating = rate_repository_semantic(improved_python_files, gpt4_token)
+        # syntaktische bewertung
+
 
         # Fügen Sie die Ergebnisse dem DataFrame hinzu
         results_df = results_df.append(

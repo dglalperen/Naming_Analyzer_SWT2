@@ -29,7 +29,6 @@ def clone_repo(repo_link, github_token):
 
     # Get all Python files in the repository
     python_files = glob.glob(os.path.join(repo_dir, '**/*.py'), recursive=True)
-
     return python_files
 
 def delete_repo(repo_link):

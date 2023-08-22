@@ -3,6 +3,7 @@ import sys
 import pandas as pd
 import requests
 
+
 def get_default_branch(repo_full_name, github_token):
     api_url = f"https://api.github.com/repos/{repo_full_name}"
     headers = {"Authorization": f"token {github_token}"}
@@ -14,7 +15,8 @@ def get_default_branch(repo_full_name, github_token):
         print(f"Problem beim Abrufen des Standardbranches von {repo_full_name}")
         return "main"
 
-def count_python_files(repo_full_name, github_token):
+
+def count_python_files(repo_full_name, github_token, max_lines_per_file):
     default_branch = get_default_branch(repo_full_name, github_token)
     api_url = f"https://api.github.com/repos/{repo_full_name}/git/trees/{default_branch}?recursive=1"
 
@@ -23,13 +25,27 @@ def count_python_files(repo_full_name, github_token):
 
     if response.status_code == 200:
         tree = response.json()["tree"]
-        return sum(1 for item in tree if item["path"].endswith(".py"))
+        return sum(
+            1
+            for item in tree
+            if item["path"].endswith(".py")
+            and item.get("size", 0) <= max_lines_per_file
+        )
     else:
         print(f"Problem beim Abrufen des Inhalts von {repo_full_name}")
         return 0
 
-def search_repositories(language, min_size, max_size, num_repos, max_py_files, year, github_token):
 
+def search_repositories(
+    language,
+    min_size,
+    max_size,
+    num_repos,
+    max_py_files,
+    max_lines_per_file,
+    year,
+    github_token,
+):
     min_size = int(min_size) * 1024  # Konvertiere KB in Bytes
     max_size = int(max_size) * 1024  # Konvertiere KB in Bytes
     num_repos = int(num_repos)
@@ -37,8 +53,12 @@ def search_repositories(language, min_size, max_size, num_repos, max_py_files, y
     api_url = "https://api.github.com/search/repositories"
     query = f"language:Python size:{min_size}..{max_size} created:>{year}-01-01"
 
-    params = {"q": query, "sort": "stars", "order": "asc",
-              "per_page": 100}  # Sort by least stars first
+    params = {
+        "q": query,
+        "sort": "stars",
+        "order": "asc",
+        "per_page": 100,
+    }  # Sort by least stars first
     headers = {"Authorization": f"token {github_token}"}
 
     filtered_repos = []
@@ -52,7 +72,8 @@ def search_repositories(language, min_size, max_size, num_repos, max_py_files, y
             print(f"Fehlercode: {response.status_code}")
             print(f"Fehlernachricht: {response.text}")
             print(
-                "Es gab ein Problem beim Abrufen der Repositories. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut.")
+                "Es gab ein Problem beim Abrufen der Repositories. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut."
+            )
             return None
 
         repos = response.json()["items"]
@@ -64,7 +85,9 @@ def search_repositories(language, min_size, max_size, num_repos, max_py_files, y
         for repo in repos:
             if len(filtered_repos) >= num_repos:
                 break
-            py_files_count = count_python_files(repo["full_name"], github_token)
+            py_files_count = count_python_files(
+                repo["full_name"], github_token, max_lines_per_file
+            )  # Pass the new parameter
             if py_files_count <= max_py_files:
                 filtered_repos.append(repo)
 
@@ -78,8 +101,11 @@ def search_repositories(language, min_size, max_size, num_repos, max_py_files, y
     # Speichern Sie das DataFrame in einer CSV-Datei
     df.to_csv("repositories.csv", index=False)
 
-    print("Die Repositories wurden erfolgreich in der Datei 'repositories.csv' gespeichert.")
+    print(
+        "Die Repositories wurden erfolgreich in der Datei 'repositories.csv' gespeichert."
+    )
     return df
+
 
 if __name__ == "__main__":
     GITHUB_API_URL = "https://api.github.com"
@@ -95,6 +121,19 @@ if __name__ == "__main__":
     max_py_files = int(input("Enter the maximum number of .py files in a repository: "))
     year = input("Enter the starting year for repository search: ")
 
-    df = search_repositories(language, min_size, max_size, num_repos, max_py_files, year, GITHUB_TOKEN)
+    max_lines_per_file = int(
+        input("Enter the maximum number of lines a .py file can contain: ")
+    )
+
+    df = search_repositories(
+        language,
+        min_size,
+        max_size,
+        num_repos,
+        max_py_files,
+        max_lines_per_file,
+        year,
+        GITHUB_TOKEN,
+    )
 
     print(df)

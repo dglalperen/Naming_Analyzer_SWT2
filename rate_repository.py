@@ -1,53 +1,74 @@
 from semantic_evaluation import ask_chatgpt, get_score
-import nltk
-from nltk.tokenize import word_tokenize
 import os
 import re
+from nltk.tokenize import word_tokenize
+import ast
 
 
-def split_into_chunks(text, max_chunk_size):
+def get_name_count_from_code_string(code_str):
+    try:
+        tree = ast.parse(code_str)
+    except SyntaxError:
+        # Versuchen Sie, Python 2-spezifische Konstrukte anzupassen
+        # Hier wird nur das print-Statement berücksichtigt
+        # Weitere Anpassungen können hinzugefügt werden, wenn notwendig
+        modified_code_str = code_str.replace("print ", "print(") + ")"
+        try:
+            tree = ast.parse(modified_code_str)
+        except:
+            return 0
+
+    function_names = [node for node in ast.walk(tree)
+                      if isinstance(node, ast.FunctionDef) and not (
+                    node.name.startswith('__') and node.name.endswith('__'))]
+
+    class_names = [node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)]
+
+    assignments = [node for node in ast.walk(tree) if
+                   isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)]
+
+    constant_names = [node.targets[0] for node in assignments if node.targets[0].id.isupper()]
+
+    variable_names = [node.targets[0] for node in assignments if
+                      not (node.targets[0].id.startswith('__') and node.targets[0].id.endswith('__'))]
+    variable_names = [node for node in variable_names if node not in constant_names]
+
+    total_names = len(function_names) + len(class_names) + len(variable_names) + len(constant_names)
+
+    return total_names
+
+
+def split_into_chunks(text, max_tokens):
     """
-    Split the input text into chunks based on natural breakpoints, such as the end of functions, classes, comments, or multiple newline breaks.
+    Split the input text into chunks based on natural breakpoints such as the end of functions or classes.
+    Chunks the text only if the total tokens exceed max_tokens.
 
     Args:
     text (str): The input text to split.
-    max_chunk_size (int): The desired maximum chunk size.
+    max_tokens (int): The desired maximum number of tokens.
 
     Returns:
     list of str: The chunks of the input text.
     """
-    # Define split patterns: end of functions/classes, standalone comments, and multi-newlines
-    patterns = [
-        r"\bdef \b",
-        r"\bclass \b",
-        r"^\s*#.*$",
-        r"(\'\'\'(.?)\'\'\'|\"\"\"(.?)\"\"\")",
-        r"\n\s*\n",
-    ]
 
-    split_pattern = "|".join(patterns)
-
-    # Split using the patterns but keep the delimiter
-    parts = re.split(split_pattern, text, flags=re.MULTILINE | re.DOTALL)
-    chunks, chunk = [], ""
-
-    # If no parts are found based on the patterns, treat the entire text as one chunk
-    if not parts or len(parts) == 1:
+    tokens = word_tokenize(text)
+    if len(tokens) <= max_tokens:
         return [text]
 
-    for part in parts:
-        # If adding the next part will exceed the max_chunk_size or if the part matches a pattern
-        if len(chunk) + len(part) > max_chunk_size or re.match(
-            split_pattern, part, flags=re.MULTILINE | re.DOTALL
-        ):
-            if chunk:  # if chunk is not empty
-                chunks.append(chunk)
-                chunk = ""
-        chunk += part
+    # Splitting points are the end of functions or classes
+    splitting_points = [match.end() for match in re.finditer(r"(def|class)\s+\w+\(.*\):", text)]
 
-    # Add any remaining chunk
-    if chunk:
-        chunks.append(chunk)
+    chunks, start = [], 0
+
+    for point in splitting_points:
+        if start != point:  # Avoids empty chunks
+            chunk = text[start:point]
+            if len(word_tokenize(chunk)) <= max_tokens:
+                chunks.append(chunk)
+                start = point
+
+    if start < len(text):
+        chunks.append(text[start:])
 
     return chunks
 
@@ -61,14 +82,10 @@ def rate_repository_semantic(python_files, openai_token):
     os.makedirs(unrated_chunks_dir, exist_ok=True)
     print("Starting the rating process for Python files...")
 
-    # Function to count the number of names in a chunk
-    def count_names(chunk):
-        return len(re.findall(r"\b[A-Za-z_][A-Za-z0-9_]*\b", chunk))
-
     # Iterate over all Python files
     for file in python_files:
-        print("=" * 40)
-        print(f"Processing file: {file}\n")
+        #print("=" * 40)
+        #print(f"Processing file: {file}\n")
 
         # Read the file content
         try:
@@ -80,11 +97,11 @@ def rate_repository_semantic(python_files, openai_token):
 
         # Split large files into chunks
         file_chunks = split_into_chunks(file_content, 6000)
-        print(f"File {file} has been split into {len(file_chunks)} chunks.\n")
+        #print(f"File {file} has been split into {len(file_chunks)} chunks.\n")
 
         # Process each chunk
-        for i, chunk in enumerate(file_chunks):
-            names_count = count_names(chunk)
+        for chunk in file_chunks:
+            names_count = get_name_count_from_code_string(chunk)
             score_json = ask_chatgpt(chunk, openai_token)
             score = get_score(score_json)
 

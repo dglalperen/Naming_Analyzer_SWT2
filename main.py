@@ -20,7 +20,7 @@ if __name__ == "__main__":
     repositories_df = pd.read_csv("repositories.csv")
 
     # falls rates.csv nicht exisitert soll der code ausgeführt werden
-    if os.path.exists("rates.csv"):
+    if not os.path.exists("rates.csv"):
         repositories_df["Semantic Rating"] = None
         repositories_df["Syntactic Rating"] = None
 

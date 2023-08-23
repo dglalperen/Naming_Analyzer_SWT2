@@ -96,7 +96,7 @@ def rate_repository_semantic(python_files, openai_token):
             continue
 
         # Split large files into chunks
-        file_chunks = split_into_chunks(file_content, 6000)
+        file_chunks = split_into_chunks(file_content, 4096)
         #print(f"File {file} has been split into {len(file_chunks)} chunks.\n")
 
         # Process each chunk

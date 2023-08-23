@@ -19,17 +19,18 @@ def clone_repo(repo_link, github_token):
     # Define repo directory
     repo_dir = os.path.abspath(f'./repos/{repo_name}')
 
-    # Check if the repository already exists. If so, delete it before cloning again.
+    # Check if the repository already exists
     if os.path.exists(repo_dir):
-        print(f"Repository {repo_name} already exists. Deleting and cloning again.")
-        shutil.rmtree(repo_dir)
-
-    # Clone the repository
-    Repo.clone_from(repo_link, repo_dir)
+        print(f"Repository {repo_name} already exists. Using existing repo.")
+    else:
+        # If not, clone the repository
+        print(f"Cloning repository {repo_name}.")
+        Repo.clone_from(repo_link, repo_dir)
 
     # Get all Python files in the repository
     python_files = glob.glob(os.path.join(repo_dir, '**/*.py'), recursive=True)
     return python_files
+
 
 def delete_repo(repo_link):
     # Get repo name from the link

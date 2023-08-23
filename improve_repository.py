@@ -7,6 +7,9 @@ import pandas as pd
 from utils import clone_repo
 from rate_repository import split_into_chunks
 
+
+global_improved_dir = os.path.join(os.getcwd(), "improved_repos")
+
 def improve_repository(repo_link, openai_token, github_token):
 
     # Clone the repository using the provided function and get all Python files
@@ -22,7 +25,7 @@ def improve_repository(repo_link, openai_token, github_token):
         with open(file, "r") as f:
             code_snippet = f.read()
 
-        chunked_code = split_into_chunks(code_snippet, 6000)
+        chunked_code = split_into_chunks(code_snippet, 4096)
 
         for chunk in chunked_code:
             improved_code = request_code_improvement(chunk, openai_token)
@@ -30,7 +33,7 @@ def improve_repository(repo_link, openai_token, github_token):
             if improved_code:  # Save the improved code if it's not None or empty
                 # Save the improved code in the improved repository directory
                 improved_file_path = os.path.join(improved_repo_dir, os.path.basename(file))
-                with open(improved_file_path, "w") as f:
+                with open(improved_file_path, "a") as f:
                     f.write(improved_code)
 
     return improved_repo_dir
@@ -39,7 +42,7 @@ def improve_repository(repo_link, openai_token, github_token):
 def improve_and_evaluate_repositories(gpt3_token, gpt4_token, github_token):
 
     # Create a global directory for all improved repositories
-    global_improved_dir = os.path.join(os.getcwd(), "improved_repos")
+
     os.makedirs(global_improved_dir, exist_ok=True)
 
     # Read the Repository URLs from the CSV file
@@ -57,10 +60,9 @@ def improve_and_evaluate_repositories(gpt3_token, gpt4_token, github_token):
 
         # Improve the repository using GPT-3 token and get the directory of improved files
         improved_dir = improve_repository(repo_url, gpt3_token, github_token)
-
-        # Find all improved .py files
-        os.chdir(improved_dir)
-        improved_python_files = glob.glob("**/*.py", recursive=True)
+        print(improved_dir)
+        # Find all improved .py files in the improved_repos directory
+        improved_python_files = glob.glob(os.path.join(improved_dir, '**/*.py'), recursive=True)
 
         # Evaluate the improved repository with the GPT-4 token
         rating = rate_repository_semantic(improved_python_files, gpt4_token)

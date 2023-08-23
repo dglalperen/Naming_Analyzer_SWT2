@@ -1,19 +1,13 @@
 import csv
 import os
 import glob
-from github import Github
-from git import Repo
-
 from rate_repository import rate_repository_semantic
 from semantic_evaluation import request_code_improvement
 import pandas as pd
 from utils import clone_repo
-
+from rate_repository import split_into_chunks
 
 def improve_repository(repo_link, openai_token, github_token):
-    # Create a global directory for all improved repositories
-    global_improved_dir = os.path.join(os.getcwd(), "improved_repos")
-    os.makedirs(global_improved_dir, exist_ok=True)
 
     # Clone the repository using the provided function and get all Python files
     python_files = clone_repo(repo_link, github_token)
@@ -28,17 +22,25 @@ def improve_repository(repo_link, openai_token, github_token):
         with open(file, "r") as f:
             code_snippet = f.read()
 
-        improved_code = request_code_improvement(code_snippet, openai_token)
-        if improved_code:  # Save the improved code if it's not None or empty
-            # Save the improved code in the improved repository directory
-            improved_file_path = os.path.join(improved_repo_dir, os.path.basename(file))
-            with open(improved_file_path, "w") as f:
-                f.write(improved_code)
+        chunked_code = split_into_chunks(code_snippet, 6000)
+
+        for chunk in chunked_code:
+            improved_code = request_code_improvement(chunk, openai_token)
+
+            if improved_code:  # Save the improved code if it's not None or empty
+                # Save the improved code in the improved repository directory
+                improved_file_path = os.path.join(improved_repo_dir, os.path.basename(file))
+                with open(improved_file_path, "w") as f:
+                    f.write(improved_code)
 
     return improved_repo_dir
 
 
 def improve_and_evaluate_repositories(gpt3_token, gpt4_token, github_token):
+
+    # Create a global directory for all improved repositories
+    global_improved_dir = os.path.join(os.getcwd(), "improved_repos")
+    os.makedirs(global_improved_dir, exist_ok=True)
 
     # Read the Repository URLs from the CSV file
     with open("repositories.csv", "r") as csv_file:

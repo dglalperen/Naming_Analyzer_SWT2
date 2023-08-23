@@ -77,12 +77,14 @@ def request_code_improvement(code_snippet, api_key=OPEN_API_TOKEN):
     - Domain-specific conventions: Adhere to all domain-specific practices.
     - Syntactic correctness: conform to PEP 8 guidelines for Python code.
     
-    Your corrections should be returned in the form of the modified Python source code, which includes all suggested naming and syntactic name changes. Do not output any other text besides the code."""
+    Your corrections should be returned in the form of the modified Python source code, which includes all suggested naming and syntactic name changes. Do not output any other text besides the code.""",
         },
         {"role": "user", "content": code_snippet},
     ]
 
-    response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages, temperature=0.1)
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo", messages=messages, temperature=0.1
+    )
 
     improved_code = response["choices"][0]["message"]["content"]
     return improved_code

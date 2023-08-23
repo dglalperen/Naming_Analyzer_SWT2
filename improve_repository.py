@@ -64,7 +64,7 @@ def improve_and_evaluate_repositories(gpt3_token, gpt4_token, github_token):
         rating = rate_repository_semantic(improved_python_files, gpt4_token)
 
         # Add the results to the DataFrame
-        results_df = results_df.append(
+        results_df = results_df._append(
             {"Repository URL": repo_url, "Semantic Score": rating["semantic_score"]},
             ignore_index=True,
         )

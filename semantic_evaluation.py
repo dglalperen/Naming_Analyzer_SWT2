@@ -3,10 +3,6 @@ import re
 import openai
 import logging
 
-OPEN_API_TOKEN = "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"
-OPEN_API_TOKEN_WITH_GPT4 = "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"
-
-
 def ask_chatgpt(text_chunk, api_key, max_retries=3):
     openai.api_key = api_key
     retries = 0

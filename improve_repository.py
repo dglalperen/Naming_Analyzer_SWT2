@@ -25,7 +25,7 @@ def improve_repository(repo_link, openai_token, github_token):
         with open(file, "r") as f:
             code_snippet = f.read()
 
-        chunked_code = split_into_chunks(code_snippet, 4096)
+        chunked_code = split_into_chunks(code_snippet, 6000)
 
         for chunk in chunked_code:
             improved_code = request_code_improvement(chunk, openai_token)

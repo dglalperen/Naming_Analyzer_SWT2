@@ -84,8 +84,9 @@ def rate_repository_semantic(python_files, openai_token):
 
     # Iterate over all Python files
     for file in python_files:
-        #print("=" * 40)
-        #print(f"Processing file: {file}\n")
+        # falls die file eine init datei ist dann soll es übersprungen werden
+        if file.endswith("__init__.py"):
+            continue
 
         # Read the file content
         try:
@@ -96,7 +97,7 @@ def rate_repository_semantic(python_files, openai_token):
             continue
 
         # Split large files into chunks
-        file_chunks = split_into_chunks(file_content, 4096)
+        file_chunks = split_into_chunks(file_content, 8000)
         #print(f"File {file} has been split into {len(file_chunks)} chunks.\n")
 
         # Process each chunk

@@ -56,9 +56,9 @@ def search_repositories(
     num_repos = int(num_repos)
 
     api_url = "https://api.github.com/search/repositories"
-    query = (f"language:{language} size:{min_size}..{max_size} created:>{year} {query_terms}"  # last_updated_year hinzufügen
-        # query_terms hinzufügen
-          )
+    query = f"language:{language} size:{min_size}..{max_size} created:>{year} {query_terms}"  # last_updated_year hinzufügen
+
+
     params = {
         "q": query,
         "sort": "stars",
@@ -71,7 +71,6 @@ def search_repositories(
     page_num = 1
 
     while len(filtered_repos) < num_repos:
-        print('test')
         params["page"] = page_num
         response = requests.get(api_url, headers=headers, params=params)
 
@@ -136,6 +135,7 @@ if __name__ == "__main__":
         input("Enter the maximum number of lines a .py file can contain: ")
     )
     """
+
     language = "Python"
     min_size = "100"
     max_size = "10000"
@@ -143,7 +143,7 @@ if __name__ == "__main__":
     max_py_files = '5'
     year = '2014'
     last_updated_year = '2016'
-    search_terms = ['test, example, first']
+    search_terms = ['test', "example", 'first']
     query_terms = " OR ".join(search_terms)
 
     max_lines_per_file = '200'

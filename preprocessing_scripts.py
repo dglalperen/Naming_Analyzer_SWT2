@@ -1,6 +1,7 @@
 import ast
 import os
-
+from utils import get_repo
+import re
 
 def analyze_code(file_path):
     try:
@@ -21,28 +22,30 @@ def analyze_code(file_path):
                 "constant": []
             }
 
-    function_names = [node.name.lower() for node in ast.walk(tree)
-                      if isinstance(node, ast.FunctionDef) and not (node.name.startswith('__') and node.name.endswith('__'))]
+    function_names = set()
+    class_names = set()
+    constant_names = set()
+    variable_names = set()
 
-    class_names = [node.name for node in ast.walk(tree) if isinstance(node, ast.ClassDef)]
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and not (node.name.startswith('__') and node.name.endswith('__')):
+            function_names.add(node.name)
+        elif isinstance(node, ast.ClassDef):
+            class_names.add(node.name)
+        elif isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):
+            if node.targets[0].id.isupper():
+                constant_names.add(node.targets[0].id)
+            elif not (node.targets[0].id.startswith('__') and node.targets[0].id.endswith('__')):
+                variable_names.add(node.targets[0].id)
 
-    constant_names = [node.targets[0].id for node in ast.walk(tree) if
-                      isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
-                      and node.targets[0].id.isupper()]
-
-    variable_names = [node.targets[0].id for node in ast.walk(tree) if
-                      isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
-                      and not (node.targets[0].id.startswith('__') and node.targets[0].id.endswith('__'))]
-
-    variable_names = [node for node in variable_names if node not in constant_names]
+    variable_names -= constant_names  # Remove names that are in both variable and constant sets
 
     return {
-        "function": function_names,
-        "class": class_names,
-        "variable": variable_names,
-        "constant": constant_names
+        "function": list(function_names),
+        "class": list(class_names),
+        "variable": list(variable_names),
+        "constant": list(constant_names)
     }
-
 
 def summarize_results(results):
     summary = {"function": [], "class": [], "variable": [], "constant": []}
@@ -55,13 +58,23 @@ def summarize_results(results):
 
 
 def analyze_repository(repo_name):
-
     results = []
+
+    repo_url = f'https://github.com/{repo_name}'
 
     # Define repo directory
     repo_dir = os.path.abspath(f'./repos/{repo_name}')
 
-    # Durch das geklonte Verzeichnis navigieren
+    # Check if repo_dir exists, if not clone the repo
+    if not os.path.exists(repo_dir):
+        if repo_url:
+            print(f"Repo {repo_name} does not exist, cloning it now.")
+            get_repo(repo_url)
+        else:
+            print(f"Repo {repo_name} does not exist and no repoURL provided to clone.")
+            return []
+
+    # Navigate through the cloned directory
     for root, dirs, files in os.walk(repo_dir):
         for file in files:
             if file.endswith('.py'):
@@ -70,7 +83,6 @@ def analyze_repository(repo_name):
                     results.append(analyze_code(file_path))
                 except Exception as e:
                     print(f"Failed to analyze file {file_path}: {e}")
-
     return results
 
 

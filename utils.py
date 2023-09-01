@@ -1,10 +1,39 @@
-import shutil
+
 import glob
 from github import Github
-from git import Repo
-import os
 import requests
+import openai
+import os
+import shutil
+from git import Repo
 
+
+def get_repo(repoURL):
+    name = repoURL.split("/")
+    repo_path = "./repos/" + name[-2] + "/" + name[-1]
+
+    if not os.path.exists("./repos/"):
+        print("Creating repos folder")
+        os.makedirs("./repos/")
+
+    if os.path.exists(repo_path):
+        print(f"The repo {name[-1]} has already been cloned. Exiting.")
+        return str(repo_path)
+
+    Repo.clone_from(repoURL, repo_path)
+    print(f"Cloned repo {name[-1]} to repos folder")
+    return str(repo_path)
+
+
+
+def check_openai_key(api_key):
+    openai.api_key = api_key
+    try:
+        # Versuchen Sie, die verfügbaren Modelle aufzulisten
+        openai.Model.list()
+        print("Der OpenAI-API-Schlüssel ist gültig.")
+    except openai.OpenAIError:
+        print("Der OpenAI-API-Schlüssel ist ungültig.")
 
 def clone_repo(repo_link, github_token):
     # Get repo name from the link
@@ -29,7 +58,7 @@ def clone_repo(repo_link, github_token):
 
     # Get all Python files in the repository
     python_files = glob.glob(os.path.join(repo_dir, '**/*.py'), recursive=True)
-    return python_files
+    return python_files, repo_dir
 
 
 def delete_repo(repo_link):

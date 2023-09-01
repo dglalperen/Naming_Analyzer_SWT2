@@ -37,20 +37,15 @@ rate_prompt = """
     """
 
 improve_prompt = """
-    Your task is to analyze a given Python source code and make corrections to the naming of variables, classes, functions, etc. to improve both semantic appropriateness and syntactic correctness. 
-    The goal is to improve the quality, appropriateness, and consistency of the names used for functions, classes, and variables and to ensure that the code conforms to PEP 8 standards.
-       
-    Criteria:
+    You need to change all names that do not exactly describe for people what the variable, function, classes and constants also does
+    Criteria for good names:
     - Descriptive character: Suggest descriptive and relevant names. So the variables, classes, functions and constants should have names that also describe what they do or what they are.
-   - Length: Provide concise and meaningful names.
+    - Length: Provide concise and meaningful names.
     - Common misuse: avoid generic terms and reserved Python words.
     - Consistency: Ensure that naming is consistent throughout the code base.
     - Domain-specific conventions: Adhere to all domain-specific practices.
     - Syntactic correctness: Adhere to the PEP 8 guidelines for Python code.
-
-    
-    Your corrections should be returned in the form of the modified Python source code, which includes all semantic and syntactic name changes. Do not output any other text besides the code.
-    """
+     """
 
 def get_score(data):
     try:
@@ -106,8 +101,6 @@ def index_repo(repo_url):
     fileextensions = [
         ".py", ]
 
-
-    print('cloning repo')
     repo_dir = get_repo(repo_url)
 
     file_names = []
@@ -147,7 +140,6 @@ def prompt_langchain(repo_url, type):
     if type == "rate":
         overall_score = []
         for code in codes:
-
             retries = 0
             max_retries = 3
             while retries < max_retries:
@@ -188,8 +180,9 @@ def prompt_langchain(repo_url, type):
             retries = 0
             max_retries = 3
             while retries < max_retries:
-
-                result = chain.run(text=text + str(code))
+                print(str(code.page_content))
+                return
+                result = chain.run(text=text + str(code.page_content))
                 print(result)
                 code_pattern = re.compile(r'python\n(.+?)Copy code',
                                           re.DOTALL)  # re.DOTALL macht, dass der Punkt auch Zeilenumbrüche matcht
@@ -197,9 +190,7 @@ def prompt_langchain(repo_url, type):
                 if match:
                     python_code = match.group(1)
 
-                    print(python_code)
-                    print(file_names[idx])
-                    print('\n\n\n\n')
+
 
 
                     break

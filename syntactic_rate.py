@@ -37,9 +37,9 @@ def summarize_results(results):
 
 
 
-def rate_repository_syntactic(repo_name):
+def rate_repository_syntactic(repo_name, type):
 
-    results = analyze_repository(repo_name)
+    results = analyze_repository(repo_name, type)
     summary = summarize_results(results)
     metric, non_conformant_names = calc_metrik(summary)
     return {'syntactic_score': metric}

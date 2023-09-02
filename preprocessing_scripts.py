@@ -13,7 +13,7 @@ def analyze_code(file_path):
         modified_code_str = code_str.replace("print ", "print(") + ")"
         try:
             tree = ast.parse(modified_code_str)
-        except:
+        except Exception as er:
             # Wenn der Code weiterhin nicht geparst werden kann, geben Sie ein leeres Dict zurück
             return {
                 "function": [],
@@ -57,22 +57,24 @@ def summarize_results(results):
     return summary
 
 
-def analyze_repository(repo_name):
+def analyze_repository(repo_name, type):
     results = []
+    if type == 'github':
+        repo_url = f'https://github.com/{repo_name}'
 
-    repo_url = f'https://github.com/{repo_name}'
+        # Define repo directory
+        repo_dir = os.path.abspath(f'./repos/{repo_name}')
+        # Check if repo_dir exists, if not clone the repo
+        if not os.path.exists(repo_dir):
+            if repo_url:
+                print(f"Repo {repo_name} does not exist, cloning it now.")
+                get_repo(repo_url)
+            else:
+                print(f"Repo {repo_name} does not exist and no repoURL provided to clone.")
+                return []
 
-    # Define repo directory
-    repo_dir = os.path.abspath(f'./repos/{repo_name}')
-
-    # Check if repo_dir exists, if not clone the repo
-    if not os.path.exists(repo_dir):
-        if repo_url:
-            print(f"Repo {repo_name} does not exist, cloning it now.")
-            get_repo(repo_url)
-        else:
-            print(f"Repo {repo_name} does not exist and no repoURL provided to clone.")
-            return []
+    else:
+        repo_dir ='./improved_repos/' + repo_name
 
     # Navigate through the cloned directory
     for root, dirs, files in os.walk(repo_dir):

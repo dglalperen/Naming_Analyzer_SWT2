@@ -1,6 +1,6 @@
 import json
 import re
-import openai
+from langchain.llms import LlamaCpp
 from langchain.text_splitter import (
     RecursiveCharacterTextSplitter,
     Language,
@@ -9,7 +9,7 @@ import os
 from utils import get_repo
 from langchain.chat_models import ChatOpenAI
 from langchain import PromptTemplate, LLMChain
-import ast
+from langchain.memory import ConversationBufferMemory
 
 OPEN_API_TOKEN = "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"
 OPEN_API_TOKEN_WITH_GPT4 = "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"
@@ -27,7 +27,6 @@ rate_prompt = """
     Clarity: Names should not only be descriptive but also intuitive and easily understood.
     Avoidance of Acronyms: Unless they are widely known or defined throughout the code.
     Domain-Specific Conventions: Depending on the purpose of the program, there may be specific naming conventions or practices that should be followed.
-    
     Your analysis results should be formatted as a JSON object, following this schema:
     {
         "score": "<score>"
@@ -36,16 +35,19 @@ rate_prompt = """
     Here, <score> represents the calculated score between 0.000 and 1.000 with up to 3 decimal places, expressed as a decimal number in string format with a granularity of 0.01. This score should reflect the overall quality of naming in the codebase, taking into account the factors mentioned above. As <names_count> you should return the total number of names that went into your rating. It is the value of the "score" and "names_count" key in the provided JSON schema. Ensure your evaluation is rigorous and critical to ensure code quality.
     """
 
-improve_prompt = """
-    You need to change all names that do not exactly describe for people what the variable, function, classes and constants also does
-    Criteria for good names:
+improve_prompt = """Your task is to analyze a given Python source code and make corrections to the naming of variables, classes, functions, etc. to improve both semantic appropriateness and syntactic correctness. 
+    The goal is to improve the quality, appropriateness, and consistency of the names used for functions, classes, and variables and to ensure that the code conforms to PEP 8 standards.
+       
+    Criteria:
     - Descriptive character: Suggest descriptive and relevant names. So the variables, classes, functions and constants should have names that also describe what they do or what they are.
-    - Length: Provide concise and meaningful names.
+   - Length: Provide concise and meaningful names.
     - Common misuse: avoid generic terms and reserved Python words.
     - Consistency: Ensure that naming is consistent throughout the code base.
     - Domain-specific conventions: Adhere to all domain-specific practices.
     - Syntactic correctness: Adhere to the PEP 8 guidelines for Python code.
-     """
+    
+    Your corrections should be returned in the form of the modified Python source code, which includes all semantic and syntactic name changes. Do not output any other text besides the code. \n\n"""
+
 
 def get_score(data):
     try:
@@ -73,7 +75,6 @@ def get_score(data):
     return score, names_count
 
 
-
 def extract_json_from_string(s):
     # Find the JSON string using a regex
     json_str = re.search(r"\{.*\}", s, flags=re.DOTALL)
@@ -88,64 +89,65 @@ def extract_json_from_string(s):
         return None
 
 
-
-
-
-
-
 def index_repo(repo_url):
-
-    os.environ['OPENAI_API_KEY'] = "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"
+    os.environ['OPENAI_API_KEY'] = "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"
 
     contents = []
     fileextensions = [
         ".py", ]
 
-    repo_dir = get_repo(repo_url)
+    if bool(re.match(r'https://github\.com/[\w.-]+/[\w.-]+', repo_url)):
+        repo_dir = get_repo(repo_url)
 
-    file_names = []
+    else:
+        repo_dir = repo_url
 
+    text_splitter = RecursiveCharacterTextSplitter.from_language(language=Language.PYTHON, chunk_size=555000,
+                                                                 chunk_overlap=0)
+
+    all_splits = []
     for dirpath, dirnames, filenames in os.walk(repo_dir):
         for file in filenames:
             if file.endswith(tuple(fileextensions)):
-                file_names.append(os.path.join(dirpath, file))
-                try:
-                    with open(os.path.join(dirpath, file), "r", encoding="utf-8") as f:
-                        contents.append(f.read())
-
-                except Exception as e:
-                    pass
-
-
-    # chunk the files
-    text_splitter =  RecursiveCharacterTextSplitter.from_language(language=Language.PYTHON, chunk_size=5000, chunk_overlap=0)
-    texts = text_splitter.create_documents(contents)
-
-    return texts, file_names
+                with open(os.path.join(dirpath, file), "r", encoding="utf-8") as f:
+                    file_content = f.read()
+                splits = text_splitter.create_documents([file_content])
+                for split in splits:
+                    split.metadata['file_name'] = file
+                all_splits.extend(splits)
+    return all_splits
 
 
 def prompt_langchain(repo_url, type):
-    os.environ['OPENAI_API_KEY'] = "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"
-
-    codes, file_names = index_repo(repo_url)
-    gpt_model = "gpt-3.5-turbo-0613" if type != "rate" else "gpt-4"
+    os.environ['OPENAI_API_KEY'] = "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"
+    repo_name = "/".join(repo_url.split("/")[-2:])
+    codes = index_repo(repo_url)
+    gpt_model = "gpt-4"
     text = rate_prompt if type == "rate" else improve_prompt
+    model = ChatOpenAI(temperature=0.1, model_name=gpt_model)
 
-    model = ChatOpenAI(temperature=0, model_name=gpt_model)
+    if type == "rate":
+        prompt_template = PromptTemplate(template='{text}', input_variables=["text"])
+        chain = LLMChain(llm=model, prompt=prompt_template, verbose=False)
+    else:
+        template = """ {text}
 
-    prompt_template = PromptTemplate(template="{text}", input_variables=["text"])
-    chain = LLMChain(llm=model, prompt=prompt_template, verbose=False)
+             {chat_history}
+            """
 
+        prompt_template = PromptTemplate(template=template, input_variables=["text", 'chat_history'])
+        memory = ConversationBufferMemory(memory_key="chat_history")
+        chain = LLMChain(llm=model, prompt=prompt_template, verbose=False, memory=memory)
 
     if type == "rate":
         overall_score = []
         for code in codes:
             retries = 0
             max_retries = 3
+
             while retries < max_retries:
 
-                result = chain.run(text=text + str(code))
-
+                result = chain.run(text=text + str(code.page_content))
                 score_json = extract_json_from_string(result)
 
                 if get_score(score_json) is None:
@@ -153,50 +155,57 @@ def prompt_langchain(repo_url, type):
                     print(f"Invalid score for chunk: {code}. Retrying {retries}/{max_retries}...")
                 else:
                     chunk_score, total_names = get_score(score_json)
+                    if chunk_score == 'N/A' or total_names == 'N/A':
+                        retries += 1
+                        break
                     if total_names == '0':
                         chunk_score = '0'
                     chunk_score = {"score": chunk_score, "names_count": total_names}
                     overall_score.append(chunk_score)
                     break
 
-        print(overall_score)
         counter = 0
         divider = 0
         for score in overall_score:
             counter += float(score['score']) * float(score['names_count'])
             divider += float(score['names_count'])
-        final_score = counter / divider
+        if divider == 0:
+            final_score = 0
+        else:
+            final_score = counter / divider
 
         return {"semantic_score": final_score}
 
     if type == 'improve':
-
         root_name = './improved_repos'
 
         if not os.path.exists(root_name):
             os.makedirs(root_name)
 
+        previous_filename = None
         for idx, code in enumerate(codes):
+
             retries = 0
             max_retries = 3
+            filename = code.metadata['file_name']
+
+            if filename != previous_filename:
+                memory.clear()
+                previous_filename = filename
+
             while retries < max_retries:
-                print(str(code.page_content))
-                return
-                result = chain.run(text=text + str(code.page_content))
-                print(result)
-                code_pattern = re.compile(r'python\n(.+?)Copy code',
-                                          re.DOTALL)  # re.DOTALL macht, dass der Punkt auch Zeilenumbrüche matcht
-                match = code_pattern.search(result)
-                if match:
-                    python_code = match.group(1)
 
+                result = chain.run(text=text + filename + '\n\n' + str(code.page_content))
+                code_blocks =result
+                if code_blocks:
+                    if not os.path.exists(os.path.join(root_name, repo_name)):
+                        os.makedirs(os.path.join(root_name, repo_name))
 
+                    file_path = os.path.join(root_name, repo_name, filename)
 
+                    with open(file_path, 'a') as f:
+                        f.write(code_blocks + '\n')
 
-                    break
+                    retries = max_retries
                 else:
                     retries += 1
-                    continue
-
-
-

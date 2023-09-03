@@ -128,7 +128,7 @@ def search_repositories(
 
 if __name__ == "__main__":
     GITHUB_API_URL = "https://api.github.com"
-    GITHUB_TOKEN = "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"
+    GITHUB_TOKEN = ""
 
     if not check_github_api_credentials(GITHUB_API_URL, GITHUB_TOKEN):
         sys.exit()

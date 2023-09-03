@@ -9,7 +9,7 @@ from openai_prompts import prompt_langchain
 
 if __name__ == "__main__":
     GITHUB_API_URL = "https://api.github.com"
-    github_token = "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"
+    github_token = ""
 
     # Load the CSV into a DataFrame
     repositories_df = pd.read_csv("repositories.csv")

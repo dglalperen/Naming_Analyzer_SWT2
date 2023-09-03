@@ -1,7 +1,7 @@
 import ast
 import os
 from utils import get_repo
-import re
+
 
 def analyze_code(file_path):
     try:
@@ -87,9 +87,3 @@ def analyze_repository(repo_name, type):
                     print(f"Failed to analyze file {file_path}: {e}")
     return results
 
-
-
-if __name__ == "__main__":
-    token = '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'
-    repo_url = 'https://github.com/donnemartin/system-design-primer'
-    print(analyze_repository(repo_url, token))

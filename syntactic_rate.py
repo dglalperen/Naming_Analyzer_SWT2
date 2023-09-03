@@ -44,11 +44,3 @@ def rate_repository_syntactic(repo_name, type):
     metric, non_conformant_names = calc_metrik(summary)
     return {'syntactic_score': metric}
 
-
-
-if __name__ == '__main__':
-
-    token = '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'
-    repo_url = 'https://github.com/vfaronov/httpolice'
-
-    metric, non_conformant_names = rate_repository_syntactic(repo_url, token)

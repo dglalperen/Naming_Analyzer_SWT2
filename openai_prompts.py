@@ -102,7 +102,7 @@ def index_repo(repo_url):
     else:
         repo_dir = repo_url
 
-    text_splitter = RecursiveCharacterTextSplitter.from_language(language=Language.PYTHON, chunk_size=555000,
+    text_splitter = RecursiveCharacterTextSplitter.from_language(language=Language.PYTHON, chunk_size=5000,
                                                                  chunk_overlap=0)
 
     all_splits = []
@@ -122,7 +122,7 @@ def prompt_langchain(repo_url, type):
     os.environ['OPENAI_API_KEY'] = "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"
     repo_name = "/".join(repo_url.split("/")[-2:])
     codes = index_repo(repo_url)
-    gpt_model = "gpt-4"
+    gpt_model = "gpt-3.5-turbo-16k-0613"
     text = rate_prompt if type == "rate" else improve_prompt
     model = ChatOpenAI(temperature=0.1, model_name=gpt_model)
 

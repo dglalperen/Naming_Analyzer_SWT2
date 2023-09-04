@@ -52,13 +52,6 @@ def analyze_code(file_path):
         "constant": list(constant_names)
     }
 
-# Function to summarize the results from multiple analyses into a single result
-def summarize_results(results):
-    summary = {"function": [], "class": [], "variable": [], "constant": []}
-    for result in results:
-        for key in result:
-            summary[key] += [item for item in result[key] if item not in summary[key] and item != '__init__']
-    return summary
 
 # Function to analyze an entire repository for function, class, variable, and constant names
 def analyze_repository(repo_name, type):

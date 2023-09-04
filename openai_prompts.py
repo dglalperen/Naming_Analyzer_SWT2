@@ -10,9 +10,8 @@ from langchain.chat_models import ChatOpenAI
 from langchain import PromptTemplate, LLMChain
 from langchain.memory import ConversationBufferMemory
 
-OPEN_API_TOKEN = "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"
-OPEN_API_TOKEN_WITH_GPT4 = "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"
 
+# Define the prompt text for rating and improving code
 rate_prompt = """
     Your task is to conduct an in-depth analysis of the naming conventions used in a given Python source code. 
     The aim is to evaluate the quality, appropriateness, and consistency of the names used for functions, classes, and variables.
@@ -48,6 +47,7 @@ improve_prompt = """Your task is to analyze a given Python source code and make 
     Your corrections should be returned in the form of the modified Python source code, which includes all semantic and syntactic name changes. Do not output any other text besides the code. \n\n"""
 
 
+# Function to extract and validate score and names_count from JSON
 def get_score(data):
     try:
         score = data.get("score")
@@ -73,7 +73,7 @@ def get_score(data):
 
     return score, names_count
 
-
+# Function to extract JSON string from a larger text string
 def extract_json_from_string(s):
     # Find the JSON string using a regex
     json_str = re.search(r"\{.*\}", s, flags=re.DOTALL)
@@ -88,6 +88,7 @@ def extract_json_from_string(s):
         return None
 
 
+# Function to index a given repository or file
 def index_repo(repo_url):
     os.environ['OPENAI_API_KEY'] = ""
 
@@ -117,27 +118,43 @@ def index_repo(repo_url):
     return all_splits
 
 
-def prompt_langchain(repo_url, type):
-    os.environ['OPENAI_API_KEY'] = ""
-    repo_name = "/".join(repo_url.split("/")[-2:])
-    codes = index_repo(repo_url)
-    gpt_model = "gpt-3.5-turbo-16k-0613" if type != "rate" else "gpt-4"
-    text = rate_prompt if type == "rate" else improve_prompt
-    model = ChatOpenAI(temperature=0.1, model_name=gpt_model)
 
+# Function to run the language model chain for either rating or improving code
+
+def prompt_langchain(repo_url, type):
+    # Setting up environment variables
+    os.environ['OPENAI_API_KEY'] = ""
+
+    # Extract repository name from the URL
+    repo_name = "/".join(repo_url.split("/")[-2:])
+
+    # Index the repository and get code chunks
+    codes = index_repo(repo_url)
+
+    # Choose model based on operation type
+    gpt_model = "gpt-3.5-turbo-16k-0613" if type != "rate" else "gpt-4"
+
+    # Set up prompt based on operation type
+    text = rate_prompt if type == "rate" else improve_prompt
+
+    # Initialize model
+    model = ChatOpenAI(temperature=0.1, model_name=gpt_model)
+    # Initialize chain and memory based on operation type
     if type == "rate":
+        # For rating, use a simple prompt
         prompt_template = PromptTemplate(template='{text}', input_variables=["text"])
         chain = LLMChain(llm=model, prompt=prompt_template, verbose=False)
     else:
+        # For improving, use a more complex template and memory
         template = """ {text}
-
-             {chat_history}
-            """
-
+                {chat_history}
+               """
         prompt_template = PromptTemplate(template=template, input_variables=["text", 'chat_history'])
         memory = ConversationBufferMemory(memory_key="chat_history")
         chain = LLMChain(llm=model, prompt=prompt_template, verbose=False, memory=memory)
 
+
+    # Code for rating the repository
     if type == "rate":
         overall_score = []
         for code in codes:
@@ -175,6 +192,7 @@ def prompt_langchain(repo_url, type):
 
         return {"semantic_score": final_score}
 
+    # Code for improving the repository
     if type == 'improve':
         root_name = './improved_repos'
 
